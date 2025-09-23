@@ -1,0 +1,85 @@
+=== ANÁLISIS FRAME 5 ===
+
+📍 INFORMACIÓN GENERAL:
+   Posición agente: None
+   Acción tomada: Action_2
+
+📊 ESTADÍSTICAS DE IMAGEN:
+   brightness_mean: 82.60670572916666
+   brightness_std: 13.745759127089183
+   brightness_min: 26.0
+   brightness_max: 115.0
+   dominant_color: rgb(82,82,82)
+   color_variance: 188.94589397995557
+
+🔍 ANÁLISIS DE REGIONES:
+   front_immediate:
+      brightness: 71.515625
+      std: 1.681630416998634
+      size: (16, 24, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 1.681630416998634
+
+   front_far:
+      brightness: 72.85666666666667
+      std: 4.044682380058483
+      size: (30, 40, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 4.044682380058483
+
+   left_side:
+      brightness: 76.86
+      std: 4.518893669915237
+      size: (20, 20, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 4.518893669915237
+
+   right_side:
+      brightness: 72.95
+      std: 2.8102490992792792
+      size: (20, 20, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 2.8102490992792792
+
+   top_view:
+      brightness: 74.80055555555556
+      std: 9.439791648019817
+      size: (60, 60, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 9.439791648019817
+
+   bottom_view:
+      brightness: 74.56074074074074
+      std: 6.09433673110076
+      size: (60, 60, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 6.203841396343694
+
+   left_corner:
+      brightness: 76.934375
+      std: 6.92288367368505
+      size: (40, 40, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 6.92288367368505
+
+   right_corner:
+      brightness: 106.50125
+      std: 6.185062524946696
+      size: (40, 40, 3)
+      is_clear: True
+      dominant_color: rgb(106,106,106)
+      texture_complexity: 6.185062524946697
+
+🎨 DETECCIÓN DE COLORES:
+   ✅ stone: 56.0% de la imagen
+
+💡 RECOMENDACIONES:
+   🚧 ADELANTE: Obstáculo detectado, considerar girar
+   🚨 ALERTA: Posible callejón sin salida

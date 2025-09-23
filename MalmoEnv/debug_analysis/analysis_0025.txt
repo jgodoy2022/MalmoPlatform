@@ -1,0 +1,85 @@
+=== ANÁLISIS FRAME 25 ===
+
+📍 INFORMACIÓN GENERAL:
+   Posición agente: None
+   Acción tomada: Action_2
+
+📊 ESTADÍSTICAS DE IMAGEN:
+   brightness_mean: 91.82208043981481
+   brightness_std: 25.41215590119756
+   brightness_min: 63.0
+   brightness_max: 235.0
+   dominant_color: rgb(92,86,95)
+   color_variance: 645.7776675467701
+
+🔍 ANÁLISIS DE REGIONES:
+   front_immediate:
+      brightness: 99.41145833333333
+      std: 9.120859446342244
+      size: (16, 24, 3)
+      is_clear: False
+      dominant_color: rgb(99,99,99)
+      texture_complexity: 9.120859446342244
+
+   front_far:
+      brightness: 100.64833333333333
+      std: 9.394750159294048
+      size: (30, 40, 3)
+      is_clear: True
+      dominant_color: rgb(100,100,100)
+      texture_complexity: 9.394750159294048
+
+   left_side:
+      brightness: 90.435
+      std: 13.724459005731337
+      size: (20, 20, 3)
+      is_clear: False
+      dominant_color: rgb(90,90,90)
+      texture_complexity: 13.724459005731337
+
+   right_side:
+      brightness: 99.02
+      std: 9.756772007175323
+      size: (20, 20, 3)
+      is_clear: False
+      dominant_color: rgb(99,99,99)
+      texture_complexity: 9.756772007175323
+
+   top_view:
+      brightness: 130.61944444444444
+      std: 41.56633912000799
+      size: (60, 60, 3)
+      is_clear: True
+      dominant_color: rgb(157,95,139)
+      texture_complexity: 29.41548296721379
+
+   bottom_view:
+      brightness: 136.22944444444445
+      std: 30.118887018728188
+      size: (60, 60, 3)
+      is_clear: True
+      dominant_color: rgb(106,124,177)
+      texture_complexity: 0.9084376426686005
+
+   left_corner:
+      brightness: 75.43
+      std: 6.9874959749541175
+      size: (40, 40, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 6.9874959749541175
+
+   right_corner:
+      brightness: 102.33125
+      std: 11.011313429264467
+      size: (40, 40, 3)
+      is_clear: True
+      dominant_color: rgb(102,102,102)
+      texture_complexity: 11.011313429264467
+
+🎨 DETECCIÓN DE COLORES:
+   ✅ stone: 42.0% de la imagen
+
+💡 RECOMENDACIONES:
+   🚧 ADELANTE: Obstáculo detectado, considerar girar
+   🚨 ALERTA: Posible callejón sin salida

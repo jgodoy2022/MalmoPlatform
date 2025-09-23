@@ -1,0 +1,82 @@
+<Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <About>
+        <Summary>Run the maze with checkpoints!</Summary>
+    </About>
+
+    <ModSettings>
+        <MsPerTick>50</MsPerTick>
+        <PrioritiseOffscreenRendering>false</PrioritiseOffscreenRendering>
+    </ModSettings>
+
+    <ServerSection>
+        <ServerInitialConditions>
+            <AllowSpawning>false</AllowSpawning>
+        </ServerInitialConditions>
+
+        <ServerHandlers>
+            <FlatWorldGenerator generatorString="3;7,220*1,5*3,2;3;,biome_1"/>
+
+            <MazeDecorator>
+                <SizeAndPosition length="5" width="5" scale="3" yOrigin="225" zOrigin="0" height="180"/>
+                <GapProbability variance="0.5">0.7</GapProbability>
+                <Seed>12345</Seed>
+                <MaterialSeed>4711</MaterialSeed>
+                <AllowDiagonalMovement>false</AllowDiagonalMovement>
+                <StartBlock fixedToEdge="true" type="quartz_block" height="1"/>
+                <EndBlock fixedToEdge="true" type="redstone_block lapis_block" height="1"/>
+                <PathBlock type="stained_glass" colour="WHITE ORANGE MAGENTA LIGHT_BLUE YELLOW LIME PINK GRAY SILVER CYAN PURPLE BLUE BROWN GREEN RED BLACK" height="1"/>
+                <FloorBlock type="glowstone"/>
+                <GapBlock type="stone" height="12"/>
+                <AddQuitProducer description="finished maze"/>
+                <AddNavigationObservations/>
+            </MazeDecorator>
+
+            <DrawingDecorator>
+                <!-- Murallas externas -->
+                <DrawCuboid x1="0" y1="225" z1="0" x2="14" y2="230" z2="0" type="stone"/>
+                <DrawCuboid x1="0" y1="225" z1="15" x2="15" y2="230" z2="15" type="stone"/>
+                <DrawCuboid x1="0" y1="225" z1="0" x2="0" y2="230" z2="15" type="stone"/>
+                <DrawCuboid x1="15" y1="225" z1="0" x2="15" y2="230" z2="15" type="stone"/>
+            </DrawingDecorator>
+
+            <ServerQuitFromTimeUp timeLimitMs="600000"/>
+            <ServerQuitWhenAnyAgentFinishes/>
+        </ServerHandlers>
+    </ServerSection>
+
+    <AgentSection mode="Survival">
+        <Name>Agent1</Name>
+        <AgentStart>
+            <!-- Ajustada para no quedar atrapado -->
+            <Placement x="5" y="226" z="5"/>
+        </AgentStart>
+
+        <AgentHandlers>
+            <VideoProducer want_depth="false">
+                <Width>640</Width>   <!-- REDUCIDO para mejor rendimiento -->
+                <Height>360</Height> <!-- REDUCIDO para mejor rendimiento -->
+            </VideoProducer>
+
+            <!-- 🔥 CAMBIADO A CONTINUOUS MOVEMENT (para malmoenv) -->
+            <ContinuousMovementCommands>
+                <ModifierList type="deny-list">
+                    <command>jump</command>
+                    <command>crouch</command>
+                    <command>attack</command>
+                    <command>use</command>
+                    <command>strafe</command>
+                </ModifierList>
+            </ContinuousMovementCommands>
+
+            <ObservationFromFullStats/>
+            <ObservationFromGrid>
+                <Grid name="surroundings">
+                    <min x="-1" y="0" z="-1"/>
+                    <max x="1" y="0" z="1"/>
+                </Grid>
+            </ObservationFromGrid>
+
+            <MissionQuitCommands/>
+        </AgentHandlers>
+    </AgentSection>
+</Mission>

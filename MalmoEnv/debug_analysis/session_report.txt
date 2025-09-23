@@ -1,0 +1,10 @@
+=== REPORTE DE SESIÓN DEBUG ===
+
+Total de frames analizados: 250
+Brillo promedio de sesión: 90.7
+Variación de brillo: 6.9
+
+📁 Archivos generados:
+   - Frames anotados: debug_analysis/frames/
+   - Análisis detallados: debug_analysis/analysis_*.txt
+   - Este reporte: debug_analysis/session_report.txt

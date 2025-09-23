@@ -1,0 +1,87 @@
+=== ANÁLISIS FRAME 20 ===
+
+📍 INFORMACIÓN GENERAL:
+   Posición agente: None
+   Acción tomada: Action_0
+
+📊 ESTADÍSTICAS DE IMAGEN:
+   brightness_mean: 95.32115740740741
+   brightness_std: 27.10887578108159
+   brightness_min: 6.0
+   brightness_max: 235.0
+   dominant_color: rgb(98,89,98)
+   color_variance: 734.891146114112
+
+🔍 ANÁLISIS DE REGIONES:
+   front_immediate:
+      brightness: 99.92708333333333
+      std: 9.78438891771252
+      size: (16, 24, 3)
+      is_clear: False
+      dominant_color: rgb(99,99,99)
+      texture_complexity: 9.784388917712517
+
+   front_far:
+      brightness: 100.66333333333333
+      std: 9.693639953884999
+      size: (30, 40, 3)
+      is_clear: True
+      dominant_color: rgb(100,100,100)
+      texture_complexity: 9.713241820662486
+
+   left_side:
+      brightness: 100.225
+      std: 9.978696057100848
+      size: (20, 20, 3)
+      is_clear: True
+      dominant_color: rgb(100,100,100)
+      texture_complexity: 9.978696057100848
+
+   right_side:
+      brightness: 100.64
+      std: 9.792874960909078
+      size: (20, 20, 3)
+      is_clear: True
+      dominant_color: rgb(100,100,100)
+      texture_complexity: 9.963689075839328
+
+   top_view:
+      brightness: 123.43925925925926
+      std: 45.0797176143778
+      size: (60, 60, 3)
+      is_clear: True
+      dominant_color: rgb(158,82,129)
+      texture_complexity: 29.124718909256618
+
+   bottom_view:
+      brightness: 139.13888888888889
+      std: 32.95039715753827
+      size: (60, 60, 3)
+      is_clear: True
+      dominant_color: rgb(105,127,184)
+      texture_complexity: 0.9469345848709357
+
+   left_corner:
+      brightness: 73.67625
+      std: 4.899253610245136
+      size: (40, 40, 3)
+      is_clear: False
+      dominant_color: dark_stone
+      texture_complexity: 4.899253610245136
+
+   right_corner:
+      brightness: 96.83375
+      std: 6.201601481673907
+      size: (40, 40, 3)
+      is_clear: False
+      dominant_color: rgb(96,96,96)
+      texture_complexity: 6.201601481673907
+
+🎨 DETECCIÓN DE COLORES:
+   ✅ redstone_block: 1.7% de la imagen
+   ✅ stone: 27.9% de la imagen
+
+💡 RECOMENDACIONES:
+   🚧 ADELANTE: Obstáculo detectado, considerar girar
+   🔀 OPCIONES: Tanto izquierda como derecha están libres
+   🎯 ¡OBJETIVO FINAL VISIBLE! Redstone block detectado
