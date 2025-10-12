@@ -1,0 +1,105 @@
+---- Minecraft Crash Report ----
+// Who set us up the TNT?
+
+Time: 10/12/25 11:38 AM
+Description: Initializing game
+
+java.lang.NoClassDefFoundError: com/microsoft/Malmo/Utils/TextureHelper
+	at net.minecraft.client.renderer.GlStateManager.bindTexture(GlStateManager.java:480)
+	at net.minecraft.client.renderer.texture.TextureUtil.bindTexture(TextureUtil.java:308)
+	at net.minecraft.client.renderer.texture.TextureUtil.allocateTextureImpl(TextureUtil.java:211)
+	at net.minecraft.client.renderer.texture.TextureUtil.allocateTexture(TextureUtil.java:203)
+	at net.minecraft.client.renderer.texture.DynamicTexture.<init>(DynamicTexture.java:30)
+	at net.minecraft.client.renderer.texture.TextureUtil.<clinit>(TextureUtil.java:26)
+	at net.minecraft.client.shader.Framebuffer.createFramebuffer(Framebuffer.java:105)
+	at net.minecraft.client.shader.Framebuffer.createBindFramebuffer(Framebuffer.java:57)
+	at net.minecraft.client.shader.Framebuffer.<init>(Framebuffer.java:38)
+	at net.minecraft.client.Minecraft.init(Minecraft.java:471)
+	at net.minecraft.client.Minecraft.run(Minecraft.java:387)
+	at net.minecraft.client.main.Main.main(Main.java:118)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135)
+	at net.minecraft.launchwrapper.Launch.main(Launch.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at net.minecraftforge.gradle.GradleStartCommon.launch(GradleStartCommon.java:97)
+	at GradleStart.main(GradleStart.java:26)
+Caused by: java.lang.ClassNotFoundException: com.microsoft.Malmo.Utils.TextureHelper
+	at net.minecraft.launchwrapper.LaunchClassLoader.findClass(LaunchClassLoader.java:191)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:418)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:351)
+	... 24 more
+Caused by: java.lang.NullPointerException
+	at net.minecraft.launchwrapper.LaunchClassLoader.findClass(LaunchClassLoader.java:182)
+	... 26 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Client thread
+Stacktrace:
+	at net.minecraft.client.renderer.GlStateManager.bindTexture(GlStateManager.java:480)
+	at net.minecraft.client.renderer.texture.TextureUtil.bindTexture(TextureUtil.java:308)
+	at net.minecraft.client.renderer.texture.TextureUtil.allocateTextureImpl(TextureUtil.java:211)
+	at net.minecraft.client.renderer.texture.TextureUtil.allocateTexture(TextureUtil.java:203)
+	at net.minecraft.client.renderer.texture.DynamicTexture.<init>(DynamicTexture.java:30)
+	at net.minecraft.client.renderer.texture.TextureUtil.<clinit>(TextureUtil.java:26)
+	at net.minecraft.client.shader.Framebuffer.createFramebuffer(Framebuffer.java:105)
+	at net.minecraft.client.shader.Framebuffer.createBindFramebuffer(Framebuffer.java:57)
+	at net.minecraft.client.shader.Framebuffer.<init>(Framebuffer.java:38)
+	at net.minecraft.client.Minecraft.init(Minecraft.java:471)
+
+-- Initialization --
+Details:
+Stacktrace:
+	at net.minecraft.client.Minecraft.run(Minecraft.java:387)
+	at net.minecraft.client.main.Main.main(Main.java:118)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at net.minecraft.launchwrapper.Launch.launch(Launch.java:135)
+	at net.minecraft.launchwrapper.Launch.main(Launch.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at net.minecraftforge.gradle.GradleStartCommon.launch(GradleStartCommon.java:97)
+	at GradleStart.main(GradleStart.java:26)
+
+-- System Details --
+Details:
+	Minecraft Version: 1.11.2
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 1.8.0_462, Temurin
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode), Temurin
+	Memory: 559483624 bytes (533 MB) / 839385088 bytes (800 MB) up to 1908932608 bytes (1820 MB)
+	JVM Flags: 1 total; -Xmx2G
+	IntCache: cache: 0, tcache: 0, allocated: 0, tallocated: 0
+	FML: 
+	Loaded coremods (and transformers): 
+OverclockingPlugin (MalmoMod-0.37.0.jar)
+  com.microsoft.Malmo.OverclockingClassTransformer
+	Launched Version: 1.11.2
+	LWJGL: 2.9.4
+	OpenGL: NVIDIA GeForce RTX 4060 Laptop GPU/PCIe/SSE2 GL version 4.6.0 NVIDIA 576.28, NVIDIA Corporation
+	GL Caps: Using GL 1.3 multitexturing.
+Using GL 1.3 texture combiners.
+Using framebuffer objects because OpenGL 3.0 is supported and separate blending is supported.
+Shaders are available because OpenGL 2.1 is supported.
+VBOs are available because OpenGL 1.5 is supported.
+
+	Using VBOs: No
+	Is Modded: Definitely; Client brand changed to 'fml,forge'
+	Type: Client (map_client.txt)
+	Resource Packs: 
+	Current Language: ~~ERROR~~ NullPointerException: null
+	Profiler Position: N/A (disabled)
+	CPU: 16x AMD Ryzen 7 7735HS with Radeon Graphics 
