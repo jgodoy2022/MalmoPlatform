@@ -1,0 +1,23 @@
+# Dependencias para entrenamiento multi-agente con Stable-Baselines3
+
+# Core ML
+numpy>=1.21.0
+gymnasium>=0.28.0
+
+# Stable-Baselines3 (con todas las dependencias)
+stable-baselines3[extra]>=2.0.0
+
+# Para TensorBoard (visualización de entrenamiento)
+tensorboard>=2.10.0
+
+# Malmo
+malmoenv>=0.0.8
+
+# Utilidades
+lxml>=4.9.0
+pathlib>=1.0.1
+
+# Opcional pero recomendado para mejor rendimiento
+# torch>=2.0.0  # Si quieres usar GPU
+# matplotlib>=3.5.0  # Para visualización de resultados
+# seaborn>=0.12.0  # Para gráficos avanzados
