@@ -19,6 +19,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import json
 from collections import deque
+import os
 
 # Importar Stable-Baselines3
 try:
@@ -264,9 +265,18 @@ class MalmoGymWrapper(gym.Env):
         try:
             # Ejecutar acción en Malmo
             obs, malmo_reward, done, info = self.env.step(action)
+
+            # Si info no es un diccionario, lo convertimos
+            if not isinstance(info, dict):
+                info = {"raw_info": info}
             
             # Calcular recompensa personalizada
             custom_reward = self._calculate_reward(obs, self.prev_obs)
+
+            # Evitar None
+            malmo_reward = malmo_reward if malmo_reward is not None else 0.0
+            custom_reward = custom_reward if custom_reward is not None else 0.0
+
             total_reward = malmo_reward + custom_reward
             
             # Extraer estado
@@ -282,8 +292,14 @@ class MalmoGymWrapper(gym.Env):
                 done = True
                 info['TimeLimit.truncated'] = True
             
-            return state, total_reward, done, False, info
-        
+            return (
+                np.array(state, dtype=np.float32),   # observation
+            float(total_reward),                 # reward
+            bool(done),                          # terminated
+            False,                               # truncated
+            info                                 # info
+        )
+
         except Exception as e:
             print(f"[{self.role_name}] Error en step: {e}")
             return np.zeros(15, dtype=np.float32), -1.0, True, False, {}
@@ -349,6 +365,9 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
     print(f"[{role_name}] Esperando sincronización...")
     start_barrier.wait()
     time.sleep(role * 2)  # Escalonar inicio para evitar conflictos
+
+    # Verificar si existe un modelo previo
+    model_path = f"models/{role_name}_best.zip"
     
     try:
         # Crear entorno
@@ -357,54 +376,63 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
             port=port,
             server=server,
             server2=server2,
-            port2=port + 1,
+            port2=port + role,
             role=role,
             exp_uid='sb3_multiagent_training'
         )
         
         # Wrap con Monitor para estadísticas
         env = Monitor(env, filename=f"logs/{role_name}")
+
+        if os.path.exists(model_path):
+            print(f"[{role_name}] Cargando modelo existente: {model_path}")
+            if role == 0:
+                model = PPO.load(model_path, env=env)
+            else:
+                model = DQN.load(model_path, env=env)
         
-        # Crear modelo según rol
-        if role == 0:  # PERSEGUIDOR - PPO
-            print(f"[{role_name}] Creando modelo PPO...")
-            model = PPO(
-                "MlpPolicy",
-                env,
-                learning_rate=3e-4,
-                n_steps=2048,
-                batch_size=64,
-                n_epochs=10,
-                gamma=0.99,
-                gae_lambda=0.95,
-                clip_range=0.2,
-                ent_coef=0.01,
-                vf_coef=0.5,
-                max_grad_norm=0.5,
-                verbose=1,
-                tensorboard_log=f"./tensorboard/{role_name}/"
-            )
+        else:
+
+            # Crear modelo según rol
+            if role == 0:  # PERSEGUIDOR - PPO
+                print(f"[{role_name}] Creando modelo PPO...")
+                model = PPO(
+                    "MlpPolicy",
+                    env,
+                    learning_rate=3e-4,
+                    n_steps=2048,
+                    batch_size=64,
+                    n_epochs=10,
+                    gamma=0.99,
+                    gae_lambda=0.95,
+                    clip_range=0.2,
+                    ent_coef=0.01,
+                    vf_coef=0.5,
+                    max_grad_norm=0.5,
+                    verbose=1,
+                    tensorboard_log=f"./tensorboard/{role_name}/"
+                )
         
-        else:  # ESCAPISTA - DQN
-            print(f"[{role_name}] Creando modelo DQN...")
-            model = DQN(
-                "MlpPolicy",
-                env,
-                learning_rate=1e-4,
-                buffer_size=100000,
-                learning_starts=1000,
-                batch_size=32,
-                tau=1.0,
-                gamma=0.99,
-                train_freq=4,
-                gradient_steps=1,
-                target_update_interval=1000,
-                exploration_fraction=0.3,
-                exploration_initial_eps=1.0,
-                exploration_final_eps=0.05,
-                verbose=1,
-                tensorboard_log=f"./tensorboard/{role_name}/"
-            )
+            else:  # ESCAPISTA - DQN
+                print(f"[{role_name}] Creando modelo DQN...")
+                model = DQN(
+                    "MlpPolicy",
+                    env,
+                    learning_rate=1e-4,
+                    buffer_size=100000,
+                    learning_starts=1000,
+                    batch_size=32,
+                    tau=1.0,
+                    gamma=0.99,
+                    train_freq=4,
+                    gradient_steps=1,
+                    target_update_interval=1000,
+                    exploration_fraction=0.3,
+                    exploration_initial_eps=1.0,
+                    exploration_final_eps=0.05,
+                    verbose=1,
+                    tensorboard_log=f"./tensorboard/{role_name}/"
+                )
         
         # Crear callbacks
         checkpoint_callback = CheckpointCallback(
@@ -424,7 +452,7 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
         model.learn(
             total_timesteps=total_timesteps,
             callback=[checkpoint_callback, custom_callback],
-            progress_bar=True
+            progress_bar=False
         )
         
         # Guardar modelo final
