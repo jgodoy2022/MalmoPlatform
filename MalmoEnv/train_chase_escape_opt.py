@@ -2,13 +2,18 @@
 Sistema de Entrenamiento Multi-Agente con Stable-Baselines3
 PPO (Perseguidor) vs DQN (Escapista) en Malmo
 
-CAMBIO: Entrenamiento por EPISODIOS en lugar de timesteps
+Ventajas de usar SB3:
+- Implementaciones optimizadas y testeadas
+- Soporte para CNN/MLP automático
+- Mejor exploración y convergencia
+- Logging integrado con TensorBoard
+- Checkpoints automáticos
 """
 import malmoenv
 import numpy as np
 from pathlib import Path
 from lxml import etree
-from threading import Thread, Barrier
+from threading import Thread, Lock, Barrier
 import time
 import gymnasium as gym
 from gymnasium import spaces
@@ -20,6 +25,7 @@ import os
 try:
     from stable_baselines3 import PPO, DQN
     from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
+    from stable_baselines3.common.vec_env import DummyVecEnv
     from stable_baselines3.common.monitor import Monitor
     print("✓ Stable-Baselines3 importado correctamente")
 except ImportError:
@@ -30,8 +36,9 @@ except ImportError:
 
 # ==================== WRAPPER PARA MALMO ====================
 class MalmoGymWrapper(gym.Env):
-    """Wrapper que convierte MalmoEnv a formato Gymnasium/SB3"""
-    
+    """
+    Wrapper que convierte MalmoEnv a formato Gymnasium/SB3
+    """
     def __init__(self, xml, port, server, server2, port2, role, exp_uid):
         super().__init__()
         
@@ -287,11 +294,11 @@ class MalmoGymWrapper(gym.Env):
             
             return (
                 np.array(state, dtype=np.float32),   # observation
-                float(total_reward),                 # reward
-                bool(done),                          # terminated
-                False,                               # truncated
-                info                                 # info
-            )
+            float(total_reward),                 # reward
+            bool(done),                          # terminated
+            False,                               # truncated
+            info                                 # info
+        )
 
         except Exception as e:
             print(f"[{self.role_name}] Error en step: {e}")
@@ -345,11 +352,10 @@ class MultiAgentCallback(BaseCallback):
         return True
 
 
-# ==================== ENTRENAMIENTO POR EPISODIOS ====================
-def train_agent_sb3(role, xml, port, server, server2, max_episodes, start_barrier):
+# ==================== ENTRENAMIENTO POR AGENTE ====================
+def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_barrier):
     """
     Entrena un agente usando Stable-Baselines3
-    CAMBIO: Ahora entrena por EPISODIOS en lugar de timesteps
     """
     role_name = "Perseguidor_PPO" if role == 0 else "Escapista_DQN"
     
@@ -370,7 +376,7 @@ def train_agent_sb3(role, xml, port, server, server2, max_episodes, start_barrie
             port=port,
             server=server,
             server2=server2,
-            port2=port + role,  # ✅ CORREGIDO
+            port2=port + role,
             role=role,
             exp_uid='sb3_multiagent_training'
         )
@@ -384,7 +390,9 @@ def train_agent_sb3(role, xml, port, server, server2, max_episodes, start_barrie
                 model = PPO.load(model_path, env=env)
             else:
                 model = DQN.load(model_path, env=env)
+        
         else:
+
             # Crear modelo según rol
             if role == 0:  # PERSEGUIDOR - PPO
                 print(f"[{role_name}] Creando modelo PPO...")
@@ -404,6 +412,7 @@ def train_agent_sb3(role, xml, port, server, server2, max_episodes, start_barrie
                     verbose=1,
                     tensorboard_log=f"./tensorboard/{role_name}/"
                 )
+        
             else:  # ESCAPISTA - DQN
                 print(f"[{role_name}] Creando modelo DQN...")
                 model = DQN(
@@ -438,35 +447,13 @@ def train_agent_sb3(role, xml, port, server, server2, max_episodes, start_barrie
             check_freq=1000
         )
         
-        # ✅ ENTRENAR POR EPISODIOS (CAMBIO PRINCIPAL)
-        print(f"\n[{role_name}] 🚀 Iniciando entrenamiento ({max_episodes} episodios)...")
-        
-        episodes_completed = 0
-        
-        while episodes_completed < max_episodes:
-            # Entrenar en chunks de 2048 timesteps
-            model.learn(
-                total_timesteps=2048,
-                reset_num_timesteps=False,
-                callback=[checkpoint_callback, custom_callback],
-                progress_bar=False
-            )
-            
-            # Contar episodios completados
-            if len(model.ep_info_buffer) > 0:
-                episodes_completed = len(model.ep_info_buffer)
-                
-                # Mostrar progreso de episodios
-                if episodes_completed % 5 == 0:
-                    recent_rewards = [ep['r'] for ep in list(model.ep_info_buffer)[-10:]]
-                    mean_reward = np.mean(recent_rewards) if recent_rewards else 0
-                    print(f"[{role_name}] Episodios: {episodes_completed}/{max_episodes} | Reward promedio: {mean_reward:.2f}")
-                
-                # Guardar checkpoint cada 10 episodios
-                if episodes_completed % 10 == 0 and episodes_completed > 0:
-                    checkpoint_path = f"models/{role_name}_ep{episodes_completed}.zip"
-                    model.save(checkpoint_path)
-                    print(f"[{role_name}] ✓ Checkpoint guardado: ep{episodes_completed}")
+        # ENTRENAR
+        print(f"\n[{role_name}] 🚀 Iniciando entrenamiento ({total_timesteps} steps)...")
+        model.learn(
+            total_timesteps=total_timesteps,
+            callback=[checkpoint_callback, custom_callback],
+            progress_bar=False
+        )
         
         # Guardar modelo final
         final_path = f"models/{role_name}_FINAL.zip"
@@ -501,7 +488,7 @@ if __name__ == '__main__':
         print("Asegúrate de tener el archivo XML de la misión")
         exit(1)
     
-    xml = xml_path.read_text(encoding='utf-8')
+    xml = xml_path.read_text()
     
     # Verificar agentes
     mission = etree.fromstring(xml)
@@ -513,17 +500,17 @@ if __name__ == '__main__':
     
     print(f"\n✓ Misión cargada: {number_of_agents} agentes")
     
-    # ✅ CONFIGURACIÓN: CAMBIAR AQUÍ EL NÚMERO DE EPISODIOS
+    # Configuración
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
-    MAX_EPISODES = 50  # ← CAMBIAR ESTE NÚMERO PARA ENTRENAR MÁS O MENOS EPISODIOS
+    TOTAL_TIMESTEPS = 500000  # 500k steps de entrenamiento
     
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
     print(f"  Agente 0 (Perseguidor-PPO): puerto {PORT}")
     print(f"  Agente 1 (Escapista-DQN): puerto {PORT + 1}")
-    print(f"  🎯 Max episodios: {MAX_EPISODES}")
+    print(f"  Total timesteps: {TOTAL_TIMESTEPS:,}")
     print(f"  Algoritmos: PPO vs DQN")
     
     # Instrucciones
@@ -547,7 +534,7 @@ if __name__ == '__main__':
     threads = [
         Thread(
             target=train_agent_sb3,
-            args=(i, xml, PORT, SERVER, SERVER2, MAX_EPISODES, start_barrier),
+            args=(i, xml, PORT, SERVER, SERVER2, TOTAL_TIMESTEPS, start_barrier),
             name=f"Agent-{i}"
         )
         for i in range(number_of_agents)
