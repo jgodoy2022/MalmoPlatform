@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<Mission xmlns="http://ProjectMalmo.microsoft.com"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <About>
+    <Summary>Seek And Track Arena</Summary>
+    <Description>Single-agent training mission where the seeker hunts a moving target that relocates randomly inside a walled arena.</Description>
+  </About>
+
+  <ModSettings>
+    <MsPerTick>5</MsPerTick>
+  </ModSettings>
+
+  <ServerSection>
+    <ServerInitialConditions>
+      <Time>
+        <StartTime>6000</StartTime>
+        <AllowPassageOfTime>false</AllowPassageOfTime>
+      </Time>
+      <Weather>clear</Weather>
+      <AllowSpawning>false</AllowSpawning>
+    </ServerInitialConditions>
+    <ServerHandlers>
+      <FlatWorldGenerator generatorString="3;minecraft:bedrock,2*minecraft:dirt,minecraft:stone;1;" forceReset="true" />
+      <DrawingDecorator>
+        <!-- Clear previous builds in the arena space -->
+        <DrawCuboid type="air" x1="-20" y1="4" z1="-20" x2="20" y2="40" z2="20" />
+
+        <!-- Arena floor -->
+        <DrawCuboid type="stone" x1="-12" y1="3" z1="-12" x2="12" y2="3" z2="12" />
+
+        <!-- Perimeter walls -->
+        <DrawCuboid type="stone_bricks" x1="-13" y1="4" z1="-13" x2="13" y2="6" z2="-13" />
+        <DrawCuboid type="stone_bricks" x1="-13" y1="4" z1="13" x2="13" y2="6" z2="13" />
+        <DrawCuboid type="stone_bricks" x1="-13" y1="4" z1="-13" x2="-13" y2="6" z2="13" />
+        <DrawCuboid type="stone_bricks" x1="13" y1="4" z1="-13" x2="13" y2="6" z2="13" />
+
+        <!-- Lighting inside arena -->
+        <DrawBlock type="sea_lantern" x="0" y="4" z="0" />
+        <DrawBlock type="sea_lantern" x="-10" y="4" z="-10" />
+        <DrawBlock type="sea_lantern" x="10" y="4" z="10" />
+        <DrawBlock type="sea_lantern" x="-10" y="4" z="10" />
+        <DrawBlock type="sea_lantern" x="10" y="4" z="-10" />
+      </DrawingDecorator>
+
+      <MovingTargetDecorator requiresAirAbove="false">
+        <ArenaBounds>
+          <min x="-11" y="4" z="-11" />
+          <max x="11" y="4" z="11" />
+        </ArenaBounds>
+        <StartPos x="0.5" y="4" z="0.5" />
+        <Seed>random</Seed>
+        <UpdateSpeed>6</UpdateSpeed>
+        <PermeableBlocks type="air" />
+        <BlockType type="glowstone" />
+      </MovingTargetDecorator>
+
+      <ServerQuitFromTimeUp description="time_up" timeLimitMs="90000" />
+      <ServerQuitWhenAnyAgentFinishes />
+    </ServerHandlers>
+  </ServerSection>
+
+  <AgentSection mode="Survival">
+    <Name>Seeker</Name>
+    <AgentStart>
+      <Placement x="0.5" y="4" z="0.5" yaw="0" pitch="0" />
+    </AgentStart>
+    <AgentHandlers>
+      <ContinuousMovementCommands turnSpeedDegs="240" />
+      <DiscreteMovementCommands />
+      <ObservationFromFullStats />
+      <ObservationFromGrid>
+        <Grid name="arena" absoluteCoords="true">
+          <min x="-12" y="3" z="-12" />
+          <max x="12" y="4" z="12" />
+        </Grid>
+      </ObservationFromGrid>
+      <ObservationFromRay />
+      <ObservationFromRecentCommands />
+      <RewardForSendingCommand reward="0.02" />
+      <RewardForTouchingBlockType>
+        <Block type="glowstone" reward="50" behaviour="onceOnly" />
+      </RewardForTouchingBlockType>
+      <RewardForMissionEnd>
+        <Reward description="time_up" reward="-5" />
+        <Reward description="found_target" reward="100" />
+        <Reward description="command_quota_reached" reward="-2" />
+      </RewardForMissionEnd>
+      <AgentQuitFromTouchingBlockType>
+        <Block description="found_target" type="glowstone" />
+      </AgentQuitFromTouchingBlockType>
+      <AgentQuitFromReachingCommandQuota description="command_quota_reached" total="600" />
+      <VideoProducer want_depth="false">
+        <Width>640</Width>
+        <Height>480</Height>
+      </VideoProducer>
+    </AgentHandlers>
+  </AgentSection>
+</Mission>

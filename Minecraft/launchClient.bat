@@ -90,10 +90,26 @@ if "!-replaceable!"=="true" (
     )
 ) > "run\config\malmomodCLIENT.cfg"
 
+set "runDir=run"
+set "cacheDir=%runDir%\cache"
+set "setupMarker=%cacheDir%\setup_completed.marker"
+
+if not exist "%cacheDir%\" (
+  mkdir "%cacheDir%"
+)
+
 :launchLoop
+REM run Gradle setup/build only the first time to speed up subsequent launches.
+if not exist "%setupMarker%" (
+    echo Performing initial Gradle setup - this may take several minutes.
+    call gradlew setupDecompWorkspace || exit /b 1
+    call gradlew build || exit /b 1
+    >"%setupMarker%" echo Completed %date% %time%
+) else (
+    echo Skipping Gradle setup and build, cached artifacts found.
+)
+
 REM finally run Minecraft:
-call gradlew setupDecompWorkspace
-call gradlew build
 call gradlew runClient
 if "!-replaceable!"=="true" (
     goto :launchLoop

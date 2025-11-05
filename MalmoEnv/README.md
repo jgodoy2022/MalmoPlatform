@@ -57,6 +57,8 @@ If you install with `pip3 install malmoenv` then you can download the Minecraft 
 
 The sample missions will be in ./MalmoPlatform/MalmoEnv/missions.
 
+`missions/search_and_track.xml` provides a seek-and-track training arena: the target wanders randomly inside a walled map, and the seeker receives shaped rewards for movement, camera exploration, and tagging the target before the timer expires.
+
 `malmoenv.bootstrap.launchMinecraft(9000)` can be used to start up the Malmo Minecraft Mod 
 listening for MalmoEnv connections on port 9000 after downloading Malmo.
 
