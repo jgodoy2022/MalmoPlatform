@@ -73,6 +73,19 @@ def launch_minecraft(port, installdir="MalmoPlatform", replaceable=False):
         Must be same as given (or defaulted) in download call if used.
         replaceable: whether or not to automatically restart Minecraft (default is false).
     """
+    try:
+        from pathlib import Path
+        insta_path = Path(installdir).resolve()
+        mc_root = insta_path / "Minecraft"
+        dot_minecraft = mc_root / ".minecraft"
+        gradle_assets = Path.home() / ".gradle" / "caches" / "minecraft" / "assets"
+        print(f"[bootstrap] installdir: {insta_path}")
+        print(f"[bootstrap] Minecraft dir: {mc_root}")
+        print(f"[bootstrap] .minecraft assets: {dot_minecraft / 'assets'} (exists={ (dot_minecraft / 'assets').exists() })")
+        print(f"[bootstrap] Gradle assets: {gradle_assets} (exists={gradle_assets.exists()})")
+    except Exception as log_err:
+        print(f"[bootstrap] Warning: could not log asset paths: {log_err}")
+
     launch_script = 'launchClient.sh'
     if os.name == 'nt':
         launch_script = 'launchClient.bat'

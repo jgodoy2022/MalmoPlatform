@@ -36,7 +36,7 @@
         <DrawCuboid type="stone" x1="1" x2="2" y1="4" y2="5" z1="-2" z2="-1"/>
 
         <!-- Objetivo estático: armor stand sin IA -->
-        <DrawEntity type="ArmorStand" x="0" y="4" z="0" name="TargetNPC"/>
+        <DrawEntity type="ArmorStand" x="0" y="4" z="0"/>
       </DrawingDecorator>
 
       <ServerQuitFromTimeUp description="time_up" timeLimitMs="120000"/>

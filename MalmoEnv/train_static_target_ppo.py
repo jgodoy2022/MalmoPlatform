@@ -75,7 +75,8 @@ class TargetEnv(gym.Env):
             for ent in entities:
                 if not isinstance(ent, dict):
                     continue
-                if str(ent.get('name', '')).lower().startswith('targetnpc'):
+                name = str(ent.get("name", "")).lower()
+                if name.startswith("armorstand"):
                     tx = ent.get('x', my_x)
                     tz = ent.get('z', my_z)
                     rel_x = (tx - my_x) / 20.0
@@ -112,20 +113,24 @@ class TargetEnv(gym.Env):
         entities = obs.get('entities', [])
         if isinstance(entities, list):
             for ent in entities:
-                if isinstance(ent, dict) and str(ent.get('name', '')).lower().startswith('targetnpc'):
-                    tx = ent.get('x', my_x)
-                    tz = ent.get('z', my_z)
-                    target_dist = np.sqrt((my_x - tx) ** 2 + (my_z - tz) ** 2)
-                    break
+                if isinstance(ent, dict):
+                    name = str(ent.get("name", "")).lower()
+                    if name.startswith("armorstand"):
+                        tx = ent.get('x', my_x)
+                        tz = ent.get('z', my_z)
+                        target_dist = np.sqrt((my_x - tx) ** 2 + (my_z - tz) ** 2)
+                        break
 
         prev_entities = prev_obs.get('entities', [])
         if isinstance(prev_entities, list):
             for ent in prev_entities:
-                if isinstance(ent, dict) and str(ent.get('name', '')).lower().startswith('targetnpc'):
-                    tx = ent.get('x', prev_x)
-                    tz = ent.get('z', prev_z)
-                    prev_target_dist = np.sqrt((prev_x - tx) ** 2 + (prev_z - tz) ** 2)
-                    break
+                if isinstance(ent, dict):
+                    name = str(ent.get("name", "")).lower()
+                    if name.startswith("armorstand"):
+                        tx = ent.get('x', prev_x)
+                        tz = ent.get('z', prev_z)
+                        prev_target_dist = np.sqrt((prev_x - tx) ** 2 + (prev_z - tz) ** 2)
+                        break
 
         if target_dist is not None:
             if prev_target_dist is not None:
@@ -220,7 +225,7 @@ def place_random_target(xml_text):
     """Coloca el ArmorStand en x/z aleatorios dentro de la arena."""
     mission = etree.fromstring(xml_text)
     ns = {"m": "http://ProjectMalmo.microsoft.com"}
-    target = mission.find(".//m:DrawEntity[@name='TargetNPC']", namespaces=ns)
+    target = mission.find(".//m:DrawEntity[@type='ArmorStand']", namespaces=ns)
     if target is not None:
         target.set("x", str(random.uniform(-4.0, 4.0)))
         target.set("z", str(random.uniform(-4.0, 4.0)))
@@ -236,7 +241,8 @@ if __name__ == "__main__":
     Path("logs/Buscador_PPO").mkdir(parents=True, exist_ok=True)
     Path("tensorboard/Buscador_PPO").mkdir(parents=True, exist_ok=True)
 
-    xml_path = Path("missions/chase_static_target.xml")
+    script_dir = Path(__file__).resolve().parent
+    xml_path = script_dir / "missions" / "chase_static_target.xml"
     if not xml_path.exists():
         print(f"? ERROR: No se encuentra {xml_path}")
         raise SystemExit(1)
