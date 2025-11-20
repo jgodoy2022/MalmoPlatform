@@ -159,11 +159,12 @@ class MalmoGymWrapper(gym.Env):
         return np.array(features, dtype=np.float32)
     
     def _calculate_reward(self, obs, prev_obs):
-        """Calcula recompensa personalizada según rol"""
+        """Calcula recompensa personalizada según rol y detecta captura"""
         reward = 0.0
+        captured = False
         
         if not isinstance(obs, dict) or not isinstance(prev_obs, dict):
-            return reward
+            return reward, captured
         
         my_x = obs.get('XPos', 0.0)
         my_z = obs.get('ZPos', 0.0)
@@ -210,6 +211,7 @@ class MalmoGymWrapper(gym.Env):
                 # Bonificaciones por distancia
                 if enemy_dist < 1.5:
                     reward += 100.0  # ¡CAPTURA!
+                    captured = True
                 elif enemy_dist < 2.5:
                     reward += 5.0   # Muy cerca
                 elif enemy_dist < 4.0:
@@ -230,6 +232,7 @@ class MalmoGymWrapper(gym.Env):
                 # Penalizaciones/bonificaciones por distancia
                 if enemy_dist < 1.5:
                     reward -= 100.0  # ¡CAPTURADO!
+                    captured = True
                 elif enemy_dist < 2.5:
                     reward -= 5.0    # Peligro
                 elif enemy_dist < 4.0:
@@ -241,7 +244,7 @@ class MalmoGymWrapper(gym.Env):
         if abs(my_x) > 9.5 or abs(my_z) > 9.5:
             reward -= 10.0
         
-        return reward + movement_penalty
+        return reward + movement_penalty, captured
     
     def reset(self, seed=None, options=None):
         """Reset del entorno"""
@@ -271,7 +274,7 @@ class MalmoGymWrapper(gym.Env):
                 info = {"raw_info": info}
             
             # Calcular recompensa personalizada
-            custom_reward = self._calculate_reward(obs, self.prev_obs)
+            custom_reward, captured = self._calculate_reward(obs, self.prev_obs)
 
             # Evitar None
             malmo_reward = malmo_reward if malmo_reward is not None else 0.0
@@ -288,6 +291,10 @@ class MalmoGymWrapper(gym.Env):
             self.episode_reward += total_reward
             
             # Terminar si se excede el máximo de pasos
+            info['captured'] = bool(captured)
+
+            if captured:
+                done = True
             if self.episode_steps >= self.max_steps:
                 done = True
                 info['TimeLimit.truncated'] = True
@@ -302,7 +309,7 @@ class MalmoGymWrapper(gym.Env):
 
         except Exception as e:
             print(f"[{self.role_name}] Error en step: {e}")
-            return np.zeros(15, dtype=np.float32), -1.0, True, False, {}
+            return np.zeros(15, dtype=np.float32), -1.0, True, False, {"captured": False}
     
     def close(self):
         """Cierra el entorno"""
