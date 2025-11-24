@@ -55,7 +55,7 @@ class TargetEnv(gym.Env):
         except Exception as e:
             print(f"[Buscador] ? Error de conexión: {e}")
             raise
-
+#UN cmabio para subir esto wtf?
     def _extract_state(self, obs):
         """Vectoriza posición propia, yaw y objetivo."""
         features = []
