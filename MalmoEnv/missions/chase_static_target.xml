@@ -82,8 +82,6 @@
         <Block behaviour="oncePerTimeSpan" reward="-2.0" type="stone"/>
       </RewardForTouchingBlockType>
 
-      <AgentQuitFromReachingCommandQuota description="quota_reached" total="1000"/>
-
       <VideoProducer want_depth="false">
         <Width>800</Width>
         <Height>600</Height>
