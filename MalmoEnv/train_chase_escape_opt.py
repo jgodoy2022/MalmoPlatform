@@ -36,7 +36,7 @@ class MalmoGymWrapper(gym.Env):
         super().__init__()
         
         self.role = role
-        self.role_name = "Perseguidor" if role == 0 else "Escapista"
+        self.role_name = "Perseguidor_PPO" if role == 0 else "Escapista_DQN"
         self.xml = xml
         self.port = port
         self.server = server
@@ -104,85 +104,114 @@ class MalmoGymWrapper(gym.Env):
     
     def _extract_state(self, info_dict):
         """
-        CORREGIDO: Extrae features del diccionario info
+        CORREGIDO: Usa caché cuando Malmo pierde al enemigo.
         """
         features = []
-        
+
         if not isinstance(info_dict, dict):
             return np.zeros(15, dtype=np.float32)
-        
+
         # 1. Posición propia (normalizada)
         my_x = info_dict.get('XPos', 0.0)
         my_z = info_dict.get('ZPos', 0.0)
         features.extend([my_x / 10.0, my_z / 10.0])
-        
+
         # 2. Velocidad (generalmente no disponible directamente, usar 0)
         my_vx = 0.0
         my_vz = 0.0
         features.extend([my_vx, my_vz])
-        
+
         # 3. Yaw (orientación normalizada)
         yaw = info_dict.get('Yaw', 0.0) / 180.0
         features.append(yaw)
-        
+
         # 4. Buscar al enemigo en entities
         enemy_found = False
         entities = info_dict.get('entities', [])
-        
+        enemy_data = None
+
         if isinstance(entities, list):
             for entity in entities:
                 if not isinstance(entity, dict):
                     continue
-                
+
                 name = str(entity.get('name', ''))
-                
-                # Buscar al otro agente (no a mí mismo)
                 is_other_agent = (
-                    'Agent' in name or 
-                    'Perseguidor' in name or 
-                    'Escapista' in name
+                    ('Agent' in name) or 
+                    ('Perseguidor' in name) or 
+                    ('Escapista' in name)
                 ) and name != info_dict.get('Name', '')
-                
+
                 if is_other_agent:
-                    enemy_x = entity.get('x', my_x)
-                    enemy_z = entity.get('z', my_z)
-                    
-                    # Posición relativa normalizada
-                    rel_x = np.clip((enemy_x - my_x) / 20.0, -1, 1)
-                    rel_z = np.clip((enemy_z - my_z) / 20.0, -1, 1)
-                    
-                    # Distancia
-                    distance = np.sqrt((enemy_x - my_x)**2 + (enemy_z - my_z)**2) / 10.0
-                    distance = np.clip(distance, 0, 2)
-                    
-                    # Ángulo hacia enemigo
-                    angle = np.arctan2(enemy_z - my_z, enemy_x - my_x) / np.pi
-                    
-                    # Velocidad relativa
-                    enemy_vx = entity.get('motionX', 0.0)
-                    enemy_vz = entity.get('motionZ', 0.0)
-                    rel_vx = np.clip((enemy_vx - my_vx) * 10.0, -1, 1)
-                    rel_vz = np.clip((enemy_vz - my_vz) * 10.0, -1, 1)
-                    
-                    features.extend([rel_x, rel_z, distance, angle, rel_vx, rel_vz])
+                    enemy_data = entity
                     enemy_found = True
                     break
-        
+
+        # ================================
+        # FIX: Si no se detecta enemigo
+        # ================================
         if not enemy_found:
-            # No se encontró enemigo
+
+            # FIX 1: Primer tick del episodio (prev_info=None)
+            if self.prev_info is None:
+                if info_dict.get("Name") == "Perseguidor_PPO":
+                    enemy_x, enemy_z = 4.5, 4.5
+                else:
+                    enemy_x, enemy_z = -4.5, -4.5
+
+                enemy_data = {"x": enemy_x, "z": enemy_z}
+
+            # FIX 2: Paso normal → usar caché
+            elif "last_enemy" in self.prev_info:
+                enemy_data = self.prev_info["last_enemy"]
+
+            # FIX 3: No hay nada
+            else:
+                enemy_data = None
+
+        # =================================
+
+        if enemy_data:
+            enemy_x = enemy_data.get('x', my_x)
+            enemy_z = enemy_data.get('z', my_z)
+
+            # Guardar última posición válida
+            if self.prev_info is None:
+                self.prev_info = {}
+            self.prev_info["last_enemy"] = {"x": enemy_x, "z": enemy_z}
+
+            rel_x = np.clip((enemy_x - my_x) / 20.0, -1, 1)
+            rel_z = np.clip((enemy_z - my_z) / 20.0, -1, 1)
+
+            distance = np.sqrt((enemy_x - my_x)**2 + (enemy_z - my_z)**2) / 10.0
+            distance = np.clip(distance, 0, 2)
+
+            angle = np.arctan2(enemy_z - my_z, enemy_x - my_x) / np.pi
+
+            enemy_vx = enemy_data.get('motionX', 0.0)
+            enemy_vz = enemy_data.get('motionZ', 0.0)
+            rel_vx = np.clip((enemy_vx - my_vx) * 10.0, -1, 1)
+            rel_vz = np.clip((enemy_vz - my_vz) * 10.0, -1, 1)
+
+            features.extend([rel_x, rel_z, distance, angle, rel_vx, rel_vz])
+
+        else:
+            # Sin enemigo ni caché
             features.extend([0.0, 0.0, 2.0, 0.0, 0.0, 0.0])
-        
+
         # 5. Distancia a bordes
         border_dist_x = np.clip((10.0 - abs(my_x)) / 10.0, 0, 1)
         border_dist_z = np.clip((10.0 - abs(my_z)) / 10.0, 0, 1)
         features.extend([border_dist_x, border_dist_z])
-        
+
         # Asegurar tamaño exacto
         features = features[:15]
         while len(features) < 15:
             features.append(0.0)
-        
+
         return np.array(features, dtype=np.float32)
+
+
     
     def _calculate_reward(self, info, prev):
         """
@@ -292,6 +321,13 @@ class MalmoGymWrapper(gym.Env):
             self.episode_reward = 0
             
             state = self._extract_state(info_dict)
+            
+            # LOGGING INICIAL
+            print(f"\n[{self.role_name}] RESET")
+            print(f"  Raw info: {first_info}")
+            print(f"  Parsed info: {info_dict}")
+            print(f"  Initial state: {state}")
+
             return state, {}
         
         except Exception as e:
@@ -308,38 +344,92 @@ class MalmoGymWrapper(gym.Env):
             return self._extract_state(default_info), {}
     
     def step(self, action):
-        """Step CORREGIDO"""
+        """Step CORREGIDO con caché de última observación válida"""
         try:
             obs, malmo_reward, done, info = self.env.step(action)
-            
+        
             # Parsear info
             info_dict = self._parse_info(info)
-            
+
+            # ================================
+            # FIX: Validar si info es VÁLIDA
+            # ================================
+            valid_info = (
+                isinstance(info_dict, dict)
+                and 'XPos' in info_dict
+                and 'ZPos' in info_dict
+                and isinstance(info_dict.get('entities', []), list)
+                and len(info_dict['entities']) > 0
+            )
+
+            if not valid_info:
+                # Mantener la última observación válida
+                info_dict = self.prev_info
+            # Si ES válida, actualizamos prev_info abajo
+            # ================================
+
             # Calcular recompensa personalizada
             custom_reward, captured = self._calculate_reward(info_dict, self.prev_info)
-            
+        
             custom_reward = custom_reward if custom_reward is not None else 0.0
             total_reward = custom_reward  # Solo usar custom rewards
-            
+        
             # Extraer estado de info
             state = self._extract_state(info_dict)
-            
+
+            # ==== LOGS INTELIGENTES (NO LOS TOCO) ====
+            if 'entities' in info_dict:
+                enemy = None
+                for e in info_dict['entities']:
+                    if isinstance(e, dict) and e.get('name') != info_dict.get('Name'):
+                        enemy = e
+                        break
+
+                if enemy:
+                    ex, ez = enemy.get('x', None), enemy.get('z', None)
+                    if ex is not None and ez is not None:
+                        dx = ex - info_dict.get('XPos', 0)
+                        dz = ez - info_dict.get('ZPos', 0)
+                        dist = (dx**2 + dz**2)**0.5
+                    else:
+                        dist = None
+                else:
+                    dist = None
+            else:
+                dist = None
+
+            if self.episode_steps % 50 == 0:
+                print(f"[{self.role_name}] step={self.episode_steps} reward={total_reward:.3f} dist={dist}")
+
+            # ================================
+            # FIX: Solo actualizar prev_info si fue válida
+            # ================================
+            if valid_info:
+                self.prev_info = info_dict
+            # ================================
+
             # Actualizar
-            self.prev_info = info_dict
             self.episode_steps += 1
             self.episode_reward += total_reward
-            
+        
             # Info para callback
             if not isinstance(info, dict):
                 info = {}
             info['captured'] = bool(captured)
-            
+        
             if captured:
                 done = True
             if self.episode_steps >= self.max_steps:
                 done = True
                 info['TimeLimit.truncated'] = True
-            
+
+            if captured:
+                print(f"[{self.role_name}] CAPTURED detected!")
+
+            if done and self.episode_steps < self.max_steps:
+                print(f"[{self.role_name}] Episode ended EARLY (captured or env done)")
+
+        
             return (
                 np.array(state, dtype=np.float32),
                 float(total_reward),
@@ -347,12 +437,13 @@ class MalmoGymWrapper(gym.Env):
                 False,
                 info
             )
-        
+    
         except Exception as e:
             print(f"[{self.role_name}] Error en step: {e}")
             import traceback
             traceback.print_exc()
             return np.zeros(15, dtype=np.float32), -1.0, True, False, {"captured": False}
+
     
     def close(self):
         if self.env:
@@ -375,7 +466,7 @@ class ImprovedCallback(BaseCallback):
         self.episode_lengths = deque(maxlen=100)
         self.best_mean_reward = -np.inf
         self.no_improvement_count = 0
-        self.max_no_improvement = 50
+        self.max_no_improvement = 200
     
     def _on_step(self) -> bool:
         if len(self.model.ep_info_buffer) > 0:
@@ -521,7 +612,7 @@ if __name__ == '__main__':
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
-    TOTAL_TIMESTEPS = 50000  
+    TOTAL_TIMESTEPS = 100000  
     
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
