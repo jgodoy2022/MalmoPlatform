@@ -60,3 +60,43 @@ The sample missions will be in ./MalmoPlatform/MalmoEnv/missions.
 `malmoenv.bootstrap.launchMinecraft(9000)` can be used to start up the Malmo Minecraft Mod 
 listening for MalmoEnv connections on port 9000 after downloading Malmo.
 
+## Guía rápida para este repo (Windows) ##
+
+Requisitos:
+- Python 3.7 (el mismo de los comandos bootstrap), Java 8 JDK, Git.
+- Instala dependencias de `MalmoEnv/requirements.txt` y Stable-Baselines3:
+  ```
+  cd MalmoEnv
+  py -3.7 -m pip install -r requirements.txt
+  py -3.7 -m pip install stable-baselines3[extra]
+  ```
+
+Lanzar instancias de Minecraft (dos terminales):
+- Terminal 1: `py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)"`
+- Terminal 2: `py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9001)"`
+Espera a que ambas muestren SERVER STARTED.
+
+Entrenar multi-agente (perseguidor PPO vs escapista DQN):
+- Desde `MalmoEnv`:  
+  ```
+  python train_chase_escape_opt.py
+  ```
+- Reanudar desde checkpoints específicos (opcional):  
+  ```
+  python train_chase_escape_opt.py ^
+    --ppo-model models/Perseguidor_PPO_FINAL.zip ^
+    --dqn-model models/escapista_dqn_best.zip
+  ```
+- Para forzar cargar *_FINAL.zip cuando también existe *_best.zip, agrega `--prefer-final`.
+
+Evaluar modelos entrenados (solo métricas, sin seguir entrenando):
+- Desde `MalmoEnv`:  
+  ```
+  python evaluar_modelos.py --ppo-model models/Perseguidor_PPO_FINAL.zip --dqn-model models/escapista_dqn_best.zip
+  ```
+  (Si omites las banderas, toma automáticamente *_best.zip y si no hay, *_FINAL.zip.)
+
+Rutas típicas de modelos generados:
+- Perseguidor PPO: `models/perseguidor_ppo_best.zip` y `models/Perseguidor_PPO_FINAL.zip`
+- Escapista DQN: `models/escapista_dqn_best.zip` y `models/Escapista_DQN_FINAL.zip`
+
