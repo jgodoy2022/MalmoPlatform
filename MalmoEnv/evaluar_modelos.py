@@ -2,7 +2,6 @@
 Script de Evaluación para modelos entrenados con Stable-Baselines3
 Carga y evalúa los modelos PPO y DQN en el entorno de Malmo
 """
-import argparse
 import malmoenv
 import numpy as np
 from pathlib import Path
@@ -15,33 +14,7 @@ import json
 # Importar el wrapper del script de entrenamiento
 import sys
 sys.path.append('.')
-from train_chase_escape_opt import MalmoGymWrapper
-
-
-def select_model_path(role_name, user_path=None, prefer_best=True):
-    """
-    Devuelve la ruta del modelo a usar.
-    Orden de prioridad: ruta manual > *_best.zip > *_FINAL.zip.
-    """
-    candidates = []
-    if user_path:
-        candidates.append(Path(user_path))
-
-    if prefer_best:
-        candidates.append(Path(f"models/{role_name.lower()}_best.zip"))
-        candidates.append(Path(f"models/{role_name}_best.zip"))
-
-    candidates.append(Path(f"models/{role_name}_FINAL.zip"))
-    candidates.append(Path(f"models/{role_name.lower()}_final.zip"))
-
-    for path in candidates:
-        if path.exists():
-            return path
-
-    readable = "\n    ".join(str(c) for c in candidates)
-    raise FileNotFoundError(
-        f"No se encontr\u00f3 ning\u00fan modelo para {role_name}. Se buscaron:\n    {readable}"
-    )
+from train_sb3_multiagent import MalmoGymWrapper
 
 
 def evaluate_agent(role, xml, port, server, server2, model_path, n_episodes, start_barrier, results_dict):
@@ -139,49 +112,31 @@ if __name__ == '__main__':
     print("=" * 70)
     print("  EVALUACIÓN DE MODELOS ENTRENADOS")
     print("=" * 70)
-
-    parser = argparse.ArgumentParser(description="Evalúa modelos PPO/DQN entrenados en Malmo.")
-    parser.add_argument(
-        "--ppo-model",
-        type=str,
-        help="Ruta manual al zip del Perseguidor (por defecto usa *_best.zip o *_FINAL.zip)."
-    )
-    parser.add_argument(
-        "--dqn-model",
-        type=str,
-        help="Ruta manual al zip del Escapista (por defecto usa *_best.zip o *_FINAL.zip)."
-    )
-    parser.add_argument(
-        "--prefer-final",
-        action="store_true",
-        help="Usar *_FINAL.zip aunque exista un *_best.zip."
-    )
-    args = parser.parse_args()
-
+    
     # Configuración
     PORT = 9000
     SERVER = '127.0.0.1'
     N_EPISODES = 10
-
-    try:
-        ppo_model_path = select_model_path(
-            role_name="Perseguidor_PPO",
-            user_path=args.ppo_model,
-            prefer_best=not args.prefer_final
-        )
-        dqn_model_path = select_model_path(
-            role_name="Escapista_DQN",
-            user_path=args.dqn_model,
-            prefer_best=not args.prefer_final
-        )
-    except FileNotFoundError as e:
-        print(f"\n❌ ERROR: {e}")
+    
+    # Rutas de modelos
+    ppo_model_path = "models/Perseguidor_PPO_FINAL.zip"
+    dqn_model_path = "models/Escapista_DQN_FINAL.zip"
+    
+    # Verificar que existan los modelos
+    if not Path(ppo_model_path).exists():
+        print(f"\n❌ ERROR: No se encuentra {ppo_model_path}")
+        print("Entrena primero los modelos con train_sb3_multiagent.py")
         exit(1)
-
+    
+    if not Path(dqn_model_path).exists():
+        print(f"\n❌ ERROR: No se encuentra {dqn_model_path}")
+        print("Entrena primero los modelos con train_sb3_multiagent.py")
+        exit(1)
+    
     # Cargar XML
     xml_path = Path('missions/chase_escape.xml')
     if not xml_path.exists():
-        print(f"\nERROR: No se encuentra {xml_path}")
+        print(f"\n❌ ERROR: No se encuentra {xml_path}")
         exit(1)
     
     xml = xml_path.read_text()
@@ -192,12 +147,6 @@ if __name__ == '__main__':
     print(f"  Episodios de evaluación: {N_EPISODES}")
     print(f"  Modelo PPO: {ppo_model_path}")
     print(f"  Modelo DQN: {dqn_model_path}")
-    if args.prefer_final:
-        print("  Preferencia de carga: *_FINAL.zip")
-    elif args.ppo_model or args.dqn_model:
-        print("  Preferencia de carga: rutas manuales cuando se indican; luego *_best.zip/_FINAL.zip")
-    else:
-        print("  Preferencia de carga: *_best.zip si existe, si no *_FINAL.zip")
     
     # Instrucciones
     print("\n" + "=" * 70)
@@ -210,7 +159,7 @@ if __name__ == '__main__':
     print("\nPresiona ENTER cuando estés listo...")
     input()
     
-    print("\nIniciando evaluación...")
+    print("\n🎮 Iniciando evaluación...")
     time.sleep(2)
     
     # Resultados compartidos
@@ -241,6 +190,7 @@ if __name__ == '__main__':
         )
     ]
     
+    # Ejecutar
     [t.start() for t in threads]
     [t.join() for t in threads]
     
@@ -253,7 +203,7 @@ if __name__ == '__main__':
         if role in results_dict:
             res = results_dict[role]
             print(f"\n{res['role_name']}:")
-            print(f"  Reward promedio: {res['mean_reward']:.2f} +/- {res['std_reward']:.2f}")
+            print(f"  Reward promedio: {res['mean_reward']:.2f} ± {res['std_reward']:.2f}")
             print(f"  Mejor reward: {max(res['all_rewards']):.2f}")
             print(f"  Peor reward: {min(res['all_rewards']):.2f}")
             print(f"  Pasos promedio: {res['mean_length']:.1f}")
@@ -264,7 +214,7 @@ if __name__ == '__main__':
     with open(results_file, 'w') as f:
         json.dump(results_dict, f, indent=2)
     
-    print(f"\nResultados guardados en: {results_file}")
+    print(f"\n✓ Resultados guardados en: {results_file}")
     print("\n" + "=" * 70)
-    print("Evaluación completada")
+    print("✅ Evaluación completada!")
     print("=" * 70)

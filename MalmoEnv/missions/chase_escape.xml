@@ -31,13 +31,6 @@
         
         <!-- Marcador central opcional -->
         <DrawBlock type="gold_block" x="0" y="4" z="0"/>
-
-        <!-- Obstaculos internos (pilares y muros cortos) -->
-        <DrawCuboid type="stone" x1="-2" x2="-2" y1="4" y2="6" z1="-2" z2="-2"/>
-        <DrawCuboid type="stone" x1="2" x2="2" y1="4" y2="6" z1="-2" z2="-2"/>
-        <DrawCuboid type="stone" x1="-2" x2="-2" y1="4" y2="6" z1="2" z2="2"/>
-        <DrawCuboid type="stone" x1="2" x2="2" y1="4" y2="6" z1="2" z2="2"/>
-        
       </DrawingDecorator>
       
       <ServerQuitFromTimeUp description="time_up" timeLimitMs="120000"/>

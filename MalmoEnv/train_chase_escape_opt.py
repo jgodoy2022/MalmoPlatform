@@ -17,7 +17,6 @@ from gymnasium import spaces
 from collections import deque
 import os
 import json
-import argparse
 
 try:
     from stable_baselines3 import PPO, DQN
@@ -503,39 +502,8 @@ class ImprovedCallback(BaseCallback):
         return True
 
 
-# ==================== HELPERS ====================
-def select_model_path(role_name, user_path=None, prefer_best=True):
-    """
-    Devuelve la ruta para cargar el modelo inicial.
-    Prioridad: ruta manual > *_best.zip > *_FINAL.zip.
-    """
-    candidates = []
-    if user_path:
-        candidates.append(Path(user_path))
-    if prefer_best:
-        candidates.append(Path(f"models/{role_name}_best.zip"))
-        candidates.append(Path(f"models/{role_name.lower()}_best.zip"))
-    candidates.append(Path(f"models/{role_name}_FINAL.zip"))
-    candidates.append(Path(f"models/{role_name.lower()}_final.zip"))
-    for path in candidates:
-        if path.exists():
-            return path
-    return None
-
-
 # ==================== ENTRENAMIENTO ====================
-def train_agent_sb3(
-    role,
-    xml,
-    port,
-    server,
-    server2,
-    total_timesteps,
-    start_barrier,
-    ppo_path_override=None,
-    dqn_path_override=None,
-    prefer_final=False,
-):
+def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_barrier):
     """Entrenamiento"""
     role_name = "Perseguidor_PPO" if role == 0 else "Escapista_DQN"
     
@@ -544,14 +512,7 @@ def train_agent_sb3(
     start_barrier.wait()
     time.sleep(role * 2)
     
-    user_path = ppo_path_override if role == 0 else dqn_path_override
-    model_path = select_model_path(
-        role_name=role_name,
-        user_path=user_path,
-        prefer_best=not prefer_final
-    )
-    if user_path and (not model_path or Path(user_path) != model_path):
-        print(f"[{role_name}] ⚠ No se encontró checkpoint manual ({user_path}), usando búsqueda automática.")
+    model_path = f"models/{role_name}_best.zip"
     
     try:
         env = MalmoGymWrapper(
@@ -562,7 +523,7 @@ def train_agent_sb3(
         
         env = Monitor(env, filename=f"logs/{role_name}")
         
-        if model_path:
+        if os.path.exists(model_path):
             print(f"[{role_name}] Cargando modelo: {model_path}")
             if role == 0:
                 model = PPO.load(model_path, env=env)
@@ -629,26 +590,6 @@ if __name__ == '__main__':
     print("  FIX: Observaciones desde info, no obs")
     print("=" * 70)
     
-    parser = argparse.ArgumentParser(
-        description="Entrena PPO (Perseguidor) y DQN (Escapista) en Malmo."
-    )
-    parser.add_argument(
-        "--ppo-model",
-        type=str,
-        help="Ruta a un checkpoint inicial para el Perseguidor (por defecto auto: *_best.zip -> *_FINAL.zip)."
-    )
-    parser.add_argument(
-        "--dqn-model",
-        type=str,
-        help="Ruta a un checkpoint inicial para el Escapista (por defecto auto: *_best.zip -> *_FINAL.zip)."
-    )
-    parser.add_argument(
-        "--prefer-final",
-        action="store_true",
-        help="Forzar que se cargue *_FINAL.zip aunque exista *_best.zip."
-    )
-    args = parser.parse_args()
-    
     Path('models').mkdir(exist_ok=True)
     Path('logs').mkdir(exist_ok=True)
     Path('tensorboard').mkdir(exist_ok=True)
@@ -677,9 +618,6 @@ if __name__ == '__main__':
     print(f"  Puerto base: {PORT}")
     print(f"  Total timesteps: {TOTAL_TIMESTEPS:,}")
     print(f"  🔧 FIX APLICADO: Extrayendo de info en lugar de obs")
-    print(f"  Checkpoint PPO: {args.ppo_model or 'auto (*_best.zip -> *_FINAL.zip)'}")
-    print(f"  Checkpoint DQN: {args.dqn_model or 'auto (*_best.zip -> *_FINAL.zip)'}")
-    print(f"  Preferencia de carga: {'*_FINAL.zip' if args.prefer_final else '*_best.zip si existe'}")
     
     print("\n" + "=" * 70)
     print("INSTRUCCIONES:")
@@ -698,11 +636,7 @@ if __name__ == '__main__':
     threads = [
         Thread(
             target=train_agent_sb3,
-            args=(
-                i, xml, PORT, SERVER, SERVER2,
-                TOTAL_TIMESTEPS, start_barrier,
-                args.ppo_model, args.dqn_model, args.prefer_final
-            ),
+            args=(i, xml, PORT, SERVER, SERVER2, TOTAL_TIMESTEPS, start_barrier),
             name=f"Agent-{i}"
         )
         for i in range(number_of_agents)
