@@ -57,7 +57,7 @@ class MalmoGymWrapper(gym.Env):
         self.env = None
         self.prev_info = None  # Cambiado: guardamos info, no obs
         self.episode_steps = 0
-        self.max_steps = 500
+        self.max_steps = 700
         self.episode_reward = 0
         
         # Tracking
@@ -455,50 +455,106 @@ class MalmoGymWrapper(gym.Env):
 
 # ==================== CALLBACK ====================
 class ImprovedCallback(BaseCallback):
-    """Callback con logging"""
-    
+    """Callback con logging + guardado de resultados por episodio"""
+
     def __init__(self, role, role_name, check_freq=2000, verbose=1):
         super().__init__(verbose)
         self.role = role
         self.role_name = role_name
         self.check_freq = check_freq
+
+        # --- Mantengo toda tu funcionalidad anterior ---
         self.episode_rewards = deque(maxlen=100)
         self.episode_lengths = deque(maxlen=100)
         self.best_mean_reward = -np.inf
         self.no_improvement_count = 0
         self.max_no_improvement = 200
-    
+
+        # --- NUEVO ---
+        self.episode_counter = 0
+        self.csv_path = f"stats/{self.role_name}_episodes.csv"
+
+        # Crear CSV si no existe
+        if self.role == 0:  # SOLO EL PERSEGUIDOR GUARDA RESULTADOS
+            os.makedirs("stats", exist_ok=True)
+            if not os.path.exists(self.csv_path):
+                with open(self.csv_path, "w") as f:
+                    f.write("episode,captured,total_reward,length\n")
+
     def _on_step(self) -> bool:
+
+        # -------------------------
+        # Guardar reward/length
+        # -------------------------
         if len(self.model.ep_info_buffer) > 0:
             for ep_info in self.model.ep_info_buffer:
                 self.episode_rewards.append(ep_info['r'])
                 self.episode_lengths.append(ep_info['l'])
-        
+
+        # -------------------------
+        # Detectar fin de episodio
+        # -------------------------
+        dones = self.locals.get("dones", [])
+        infos = self.locals.get("infos", [])
+
+        for i, done in enumerate(dones):
+            if not done:
+                continue
+            
+            # Episodio terminado
+            self.episode_counter += 1
+
+            # Obtener reward/length final del episodio
+            if len(self.model.ep_info_buffer) > 0:
+                last = self.model.ep_info_buffer[-1]
+                total_reward = last["r"]
+                length = last["l"]
+            else:
+                total_reward = 0
+                length = 0
+
+            # -------------------------
+            # CAPTURA FIABLE (solo perseguidor)
+            # -------------------------
+            if self.role == 0:
+                if i < len(infos) and isinstance(infos[i], dict):
+                    captured = 1 if infos[i].get("captured", False) else 0
+                else:
+                    captured = 0  # fallback seguro
+
+                # Guardar en el CSV del perseguidor
+                with open(self.csv_path, "a") as f:
+                    f.write(f"{self.episode_counter},{captured},{total_reward},{length}\n")
+
+        # -------------------------
+        # Logging periódico
+        # -------------------------
         if self.n_calls % self.check_freq == 0 and len(self.episode_rewards) > 0:
             mean_reward = np.mean(self.episode_rewards)
             mean_length = np.mean(self.episode_lengths)
             std_reward = np.std(self.episode_rewards)
-            
+
             print(f"\n[{self.role_name}] Step {self.n_calls}")
             print(f"  Reward: {mean_reward:.2f} ± {std_reward:.2f}")
             print(f"  Length: {mean_length:.1f}")
-            
+
+            # Guardar mejor modelo
             if mean_reward > self.best_mean_reward:
                 improvement = mean_reward - self.best_mean_reward
                 self.best_mean_reward = mean_reward
                 self.no_improvement_count = 0
-                
+
                 model_path = f"models/{self.role_name.lower()}_best.zip"
                 self.model.save(model_path)
                 print(f"  ✓ MEJOR (+{improvement:.2f})")
             else:
                 self.no_improvement_count += 1
                 print(f"  Sin mejora ({self.no_improvement_count}/{self.max_no_improvement})")
-            
+
             if self.no_improvement_count >= self.max_no_improvement:
                 print(f"\n[{self.role_name}] ⚠️ EARLY STOPPING")
                 return False
-        
+
         return True
 
 
@@ -590,6 +646,7 @@ if __name__ == '__main__':
     print("  FIX: Observaciones desde info, no obs")
     print("=" * 70)
     
+    Path('stats').mkdir(exist_ok=True)
     Path('models').mkdir(exist_ok=True)
     Path('logs').mkdir(exist_ok=True)
     Path('tensorboard').mkdir(exist_ok=True)
@@ -612,7 +669,7 @@ if __name__ == '__main__':
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
-    TOTAL_TIMESTEPS = 100000  
+    TOTAL_TIMESTEPS = 50000  
     
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")

@@ -60,3 +60,54 @@ The sample missions will be in ./MalmoPlatform/MalmoEnv/missions.
 `malmoenv.bootstrap.launchMinecraft(9000)` can be used to start up the Malmo Minecraft Mod 
 listening for MalmoEnv connections on port 9000 after downloading Malmo.
 
+
+## Guía rápida para este repo (Windows) ##
+
+Requisitos:
+- Python 3.7 (el mismo de los comandos bootstrap), Java 8 JDK, Git.
+- Instala dependencias de `MalmoEnv/requirements.txt` y Stable-Baselines3:
+  ```
+  cd MalmoEnv
+  py -3.7 -m pip install -r requirements.txt
+  py -3.7 -m pip install stable-baselines3[extra]
+  ```
+
+Lanzar instancias de Minecraft (dos terminales):
+- Terminal 1: 
+```bash
+py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)"
+```
+
+- Terminal 2: 
+```bash
+py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9001)"
+```
+
+Espera a que ambas muestren SERVER STARTED.
+
+Entrenar multi-agente (perseguidor PPO vs escapista DQN):
+- Desde `MalmoEnv`:  
+  ```
+  py -3.7 train_chase_escape_opt.py
+  ```
+Automaticamente continua con la información guardada del ultimo entrenamiento, los modelos cargados son aquellos con los nombres:
+
+- Perseguidor PPO: `models/perseguidor_ppo_best.zip`
+- Escapista DQN: `models/escapista_dqn_best.zip`
+
+Si quiere empezar desde cero borre los elementos almacenados en las carpetas:
+- `models`
+- `tensorboard`
+- `models`
+- `logs`
+- `stats`
+
+Si quiere verificar las metricas del entrenamiento asegurese de tener datos en la carpeta `tensorboard` y utilizar el comando:
+
+```bash
+tensorboard --logdir tensorboard --port 6006
+```
+
+Rutas típicas de modelos generados:
+- Perseguidor PPO: `models/perseguidor_ppo_best.zip` y `models/Perseguidor_PPO_FINAL.zip`
+- Escapista DQN: `models/escapista_dqn_best.zip` y `models/Escapista_DQN_FINAL.zip`
