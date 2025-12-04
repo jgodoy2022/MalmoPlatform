@@ -47,7 +47,7 @@ def evaluate_agent(role, xml, port, server, server2, model_path, n_episodes, sta
         else:
             model = DQN.load(model_path, env=env)
         
-        print(f"[{role_name}] ✓ Modelo cargado, iniciando evaluación...")
+        print(f"[{role_name}] Modelo cargado, iniciando evaluación...")
         
         # Estadísticas
         episode_rewards = []
@@ -103,7 +103,7 @@ def evaluate_agent(role, xml, port, server, server2, model_path, n_episodes, sta
         env.close()
     
     except Exception as e:
-        print(f"[{role_name}] ✗ ERROR: {e}")
+        print(f"[{role_name}] ERROR: {e}")
         import traceback
         traceback.print_exc()
 
@@ -124,19 +124,19 @@ if __name__ == '__main__':
     
     # Verificar que existan los modelos
     if not Path(ppo_model_path).exists():
-        print(f"\n❌ ERROR: No se encuentra {ppo_model_path}")
+        print(f"\nERROR: No se encuentra {ppo_model_path}")
         print("Entrena primero los modelos con train_sb3_multiagent.py")
         exit(1)
     
     if not Path(dqn_model_path).exists():
-        print(f"\n❌ ERROR: No se encuentra {dqn_model_path}")
+        print(f"\nERROR: No se encuentra {dqn_model_path}")
         print("Entrena primero los modelos con train_sb3_multiagent.py")
         exit(1)
     
     # Cargar XML
     xml_path = Path('missions/chase_escape.xml')
     if not xml_path.exists():
-        print(f"\n❌ ERROR: No se encuentra {xml_path}")
+        print(f"\nERROR: No se encuentra {xml_path}")
         exit(1)
     
     xml = xml_path.read_text()
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     print("\nPresiona ENTER cuando estés listo...")
     input()
     
-    print("\n🎮 Iniciando evaluación...")
+    print("\nIniciando evaluación...")
     time.sleep(2)
     
     # Resultados compartidos
@@ -202,19 +202,19 @@ if __name__ == '__main__':
     for role in [0, 1]:
         if role in results_dict:
             res = results_dict[role]
-            print(f"\n{res['role_name']}:")
-            print(f"  Reward promedio: {res['mean_reward']:.2f} ± {res['std_reward']:.2f}")
-            print(f"  Mejor reward: {max(res['all_rewards']):.2f}")
-            print(f"  Peor reward: {min(res['all_rewards']):.2f}")
-            print(f"  Pasos promedio: {res['mean_length']:.1f}")
-            print(f"  Victorias: {res['wins']}/{N_EPISODES} ({res['win_rate']*100:.1f}%)")
+    print(f"\n{res['role_name']}:")
+    print(f"  Reward promedio: {res['mean_reward']:.2f} ± {res['std_reward']:.2f}")
+    print(f"  Mejor reward: {max(res['all_rewards']):.2f}")
+    print(f"  Peor reward: {min(res['all_rewards']):.2f}")
+    print(f"  Pasos promedio: {res['mean_length']:.1f}")
+    print(f"  Victorias: {res['wins']}/{N_EPISODES} ({res['win_rate']*100:.1f}%)")
     
     # Guardar resultados en JSON
     results_file = f"evaluation_results_{int(time.time())}.json"
     with open(results_file, 'w') as f:
         json.dump(results_dict, f, indent=2)
     
-    print(f"\n✓ Resultados guardados en: {results_file}")
+    print(f"\nResultados guardados en: {results_file}")
     print("\n" + "=" * 70)
-    print("✅ Evaluación completada!")
+    print("Evaluación completada!")
     print("=" * 70)

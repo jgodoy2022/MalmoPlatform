@@ -29,7 +29,7 @@ critical_files = ['launchClient.bat', 'launchClient.sh', 'gradlew.bat',
                   'launch_minecraft_in_background.py', 'build.gradle']
 for fname in critical_files:
     fpath = os.path.join(bootstrap_dir, fname)
-    exists = "✓" if os.path.exists(fpath) else "✗"
+    exists = "OK" if os.path.exists(fpath) else "X"
     print(f"   {exists} {fname}")
 
 # 4. Ver código de launch_minecraft

@@ -1,10 +1,25 @@
 """
-Sistema de Entrenamiento Multi-Agente CORREGIDO
-PPO (Perseguidor) vs DQN (Escapista) en Malmo
+Sistema de entrenamiento multi-agente (corregido) para Malmo:
+- Perseguidor con PPO (Stable-Baselines3)
+- Escapista con DQN (Stable-Baselines3)
 
-FIX CRÍTICO: Las observaciones están en info, no en obs
-obs = imagen (numpy array)
-info = diccionario JSON con posiciones/entidades
+Idea clave: las observaciones utiles vienen en info, no en obs.
+obs = imagen cruda (numpy array)
+info = dict JSON con posiciones/entidades; se usa para construir el estado.
+
+Como usar (Windows):
+1) Abrir dos terminales y lanzar Minecraft:
+   py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)"
+   py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9001)"
+   Esperar "SERVER STARTED" en ambas.
+2) Desde la carpeta MalmoEnv:
+   py -3.7 train_chase_escape_opt.py
+   (continua desde los modelos guardados si existen en models/)
+
+Salida y artefactos:
+- Modelos en models/perseguidor_ppo_best.zip y escapista_dqn_best.zip
+- Metricas por episodio del perseguidor en stats/Perseguidor_PPO_episodes.csv
+- Logs de monitor en logs/ y tensorboard/ si se activan
 """
 import malmoenv
 import numpy as np
@@ -22,9 +37,9 @@ try:
     from stable_baselines3 import PPO, DQN
     from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
     from stable_baselines3.common.monitor import Monitor
-    print("✓ Stable-Baselines3 importado correctamente")
+    print("Stable-Baselines3 importado correctamente")
 except ImportError:
-    print("❌ ERROR: Instala stable-baselines3")
+    print("ERROR: Instala stable-baselines3")
     exit(1)
 
 
@@ -76,9 +91,9 @@ class MalmoGymWrapper(gym.Env):
                 server2=self.server2, port2=self.port2,
                 role=self.role, exp_uid=self.exp_uid
             )
-            print(f"[{self.role_name}] ✓ Conectado")
+            print(f"[{self.role_name}] Conectado")
         except Exception as e:
-            print(f"[{self.role_name}] ✗ Error: {e}")
+            print(f"[{self.role_name}] Error: {e}")
             raise
     
     def _parse_info(self, info):
@@ -321,12 +336,6 @@ class MalmoGymWrapper(gym.Env):
             self.episode_reward = 0
             
             state = self._extract_state(info_dict)
-            
-            # LOGGING INICIAL
-            print(f"\n[{self.role_name}] RESET")
-            print(f"  Raw info: {first_info}")
-            print(f"  Parsed info: {info_dict}")
-            print(f"  Initial state: {state}")
 
             return state, {}
         
@@ -535,7 +544,7 @@ class ImprovedCallback(BaseCallback):
             std_reward = np.std(self.episode_rewards)
 
             print(f"\n[{self.role_name}] Step {self.n_calls}")
-            print(f"  Reward: {mean_reward:.2f} ± {std_reward:.2f}")
+            print(f"  Reward: {mean_reward:.2f} +/- {std_reward:.2f}")
             print(f"  Length: {mean_length:.1f}")
 
             # Guardar mejor modelo
@@ -546,13 +555,13 @@ class ImprovedCallback(BaseCallback):
 
                 model_path = f"models/{self.role_name.lower()}_best.zip"
                 self.model.save(model_path)
-                print(f"  ✓ MEJOR (+{improvement:.2f})")
+                print(f"  Mejor resultado (+{improvement:.2f})")
             else:
                 self.no_improvement_count += 1
                 print(f"  Sin mejora ({self.no_improvement_count}/{self.max_no_improvement})")
 
             if self.no_improvement_count >= self.max_no_improvement:
-                print(f"\n[{self.role_name}] ⚠️ EARLY STOPPING")
+                print(f"\n[{self.role_name}] EARLY STOPPING")
                 return False
 
         return True
@@ -619,7 +628,7 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
             role=role, role_name=role_name, check_freq=2000
         )
         
-        print(f"\n[{role_name}] 🚀 Entrenamiento iniciado ({total_timesteps:,} steps)")
+        print(f"\n[{role_name}] Entrenamiento iniciado ({total_timesteps:,} steps)")
         model.learn(
             total_timesteps=total_timesteps,
             callback=[checkpoint_callback, custom_callback],
@@ -628,13 +637,13 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
         
         final_path = f"models/{role_name}_FINAL.zip"
         model.save(final_path)
-        print(f"\n[{role_name}] ✓ Modelo final: {final_path}")
+        print(f"\n[{role_name}] Modelo final: {final_path}")
         
         env.close()
-        print(f"[{role_name}] ✓ Completado!")
+        print(f"[{role_name}] Completado!")
     
     except Exception as e:
-        print(f"[{role_name}] ✗ ERROR: {e}")
+        print(f"[{role_name}] ERROR: {e}")
         import traceback
         traceback.print_exc()
 
@@ -653,7 +662,7 @@ if __name__ == '__main__':
     
     xml_path = Path('missions/chase_escape.xml')
     if not xml_path.exists():
-        print(f"\n❌ ERROR: No se encuentra {xml_path}")
+        print(f"\nERROR: No se encuentra {xml_path}")
         exit(1)
     
     xml = xml_path.read_text()
@@ -661,10 +670,10 @@ if __name__ == '__main__':
     number_of_agents = len(mission.findall('{http://ProjectMalmo.microsoft.com}AgentSection'))
     
     if number_of_agents != 2:
-        print(f"\n❌ ERROR: Se necesitan 2 agentes")
+        print(f"\nERROR: Se necesitan 2 agentes")
         exit(1)
     
-    print(f"\n✓ Misión cargada: {number_of_agents} agentes")
+    print(f"\nMisión cargada: {number_of_agents} agentes")
     
     PORT = 9000
     SERVER = '127.0.0.1'
@@ -674,7 +683,7 @@ if __name__ == '__main__':
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
     print(f"  Total timesteps: {TOTAL_TIMESTEPS:,}")
-    print(f"  🔧 FIX APLICADO: Extrayendo de info en lugar de obs")
+    print("  FIX APLICADO: Extrayendo de info en lugar de obs")
     
     print("\n" + "=" * 70)
     print("INSTRUCCIONES:")
@@ -685,7 +694,7 @@ if __name__ == '__main__':
     print("\nPresiona ENTER cuando estén listas...")
     input()
     
-    print("\n🚀 Iniciando en 3 segundos...")
+    print("\nIniciando en 3 segundos...")
     time.sleep(3)
     
     start_barrier = Barrier(number_of_agents)
@@ -703,7 +712,7 @@ if __name__ == '__main__':
     [t.join() for t in threads]
     
     print("\n" + "=" * 70)
-    print("  ✓ ENTRENAMIENTO COMPLETADO")
+    print("  ENTRENAMIENTO COMPLETADO")
     print("=" * 70)
     print("\nTensorBoard: tensorboard --logdir ./tensorboard")
-    print("\n✅ ¡Ahora SÍ debería funcionar!")
+    print("\n¡Ahora sí debería funcionar!")
