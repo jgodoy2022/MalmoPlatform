@@ -669,7 +669,7 @@ if __name__ == '__main__':
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
-    TOTAL_TIMESTEPS = 50000  
+    TOTAL_TIMESTEPS = 20000  
     
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
