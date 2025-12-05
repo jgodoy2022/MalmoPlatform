@@ -57,7 +57,7 @@
                 <Height>360</Height> <!-- REDUCIDO para mejor rendimiento -->
             </VideoProducer>
 
-            <!-- 🔥 CAMBIADO A CONTINUOUS MOVEMENT (para malmoenv) -->
+            <!-- CAMBIADO A CONTINUOUS MOVEMENT (para malmoenv) -->
             <ContinuousMovementCommands>
                 <ModifierList type="deny-list">
                     <command>jump</command>

@@ -40,57 +40,51 @@ class DebugMalmoEnv:
                 server2=self.server2, port2=self.port2,
                 role=self.role, exp_uid=self.exp_uid
             )
-            print(f"[{self.role_name}] ✓ Conectado al puerto {self.port if self.role == 0 else self.port2}")
+            print(f"[{self.role_name}] Conectado al puerto {self.port if self.role == 0 else self.port2}")
         except Exception as e:
-            print(f"[{self.role_name}] ✗ Error: {e}")
+            print(f"[{self.role_name}] Error: {e}")
             raise
     
     def print_observation_details(self, obs):
-        """Imprime TODOS los detalles de la observación"""
+        """Imprime todos los detalles de la observacion"""
         print("\n" + "="*80)
-        print(f"[{self.role_name}] STEP {self.step_count} - OBSERVACIÓN COMPLETA")
+        print(f"[{self.role_name}] STEP {self.step_count} - OBSERVACION COMPLETA")
         print("="*80)
         
-        # Tipo de observación
-        print(f"\n📦 Tipo de observación: {type(obs)}")
+        print(f"\nTipo de observacion: {type(obs)}")
         
         if isinstance(obs, dict):
-            print(f"\n📋 Claves disponibles: {list(obs.keys())}")
+            print(f"\nClaves disponibles: {list(obs.keys())}")
             
-            # Posición propia
-            print("\n🤖 MI POSICIÓN:")
+            print("\nMI POSICION:")
             print(f"  X: {obs.get('XPos', 'N/A')}")
             print(f"  Y: {obs.get('YPos', 'N/A')}")
             print(f"  Z: {obs.get('ZPos', 'N/A')}")
             print(f"  Yaw: {obs.get('Yaw', 'N/A')}")
             print(f"  Pitch: {obs.get('Pitch', 'N/A')}")
             
-            # Velocidad
-            print("\n🏃 MI VELOCIDAD:")
+            print("\nMI VELOCIDAD:")
             print(f"  VX: {obs.get('XVel', 'N/A')}")
             print(f"  VY: {obs.get('YVel', 'N/A')}")
             print(f"  VZ: {obs.get('ZVel', 'N/A')}")
             
-            # Vida y stats
-            print("\n❤️ STATS:")
+            print("\nSTATS:")
             print(f"  Life: {obs.get('Life', 'N/A')}")
             print(f"  Food: {obs.get('Food', 'N/A')}")
             
-            # CRÍTICO: Entidades
             entities = obs.get('entities', [])
-            print(f"\n👥 ENTIDADES DETECTADAS: {len(entities) if isinstance(entities, list) else 0}")
+            print(f"\nENTIDADES DETECTADAS: {len(entities) if isinstance(entities, list) else 0}")
             
             if isinstance(entities, list) and len(entities) > 0:
                 for i, entity in enumerate(entities):
                     if isinstance(entity, dict):
                         print(f"\n  Entidad #{i+1}:")
                         print(f"    Nombre: {entity.get('name', 'N/A')}")
-                        print(f"    Posición: ({entity.get('x', 'N/A')}, {entity.get('y', 'N/A')}, {entity.get('z', 'N/A')})")
+                        print(f"    Posicion: ({entity.get('x', 'N/A')}, {entity.get('y', 'N/A')}, {entity.get('z', 'N/A')})")
                         print(f"    Yaw: {entity.get('yaw', 'N/A')}")
                         print(f"    Pitch: {entity.get('pitch', 'N/A')}")
                         print(f"    Motion: ({entity.get('motionX', 'N/A')}, {entity.get('motionY', 'N/A')}, {entity.get('motionZ', 'N/A')})")
                         
-                        # Calcular distancia si es otro agente
                         name = str(entity.get('name', ''))
                         if 'Agent' in name or 'Perseguidor' in name or 'Escapista' in name:
                             my_x = obs.get('XPos', 0)
@@ -98,44 +92,40 @@ class DebugMalmoEnv:
                             enemy_x = entity.get('x', 0)
                             enemy_z = entity.get('z', 0)
                             dist = np.sqrt((my_x - enemy_x)**2 + (my_z - enemy_z)**2)
-                            print(f"    🎯 DISTANCIA AL ENEMIGO: {dist:.2f} bloques")
+                            print(f"    Distancia al enemigo: {dist:.2f} bloques")
                             
-                            # Verificar captura
                             if dist < 1.5:
-                                print(f"    ⚠️ ¡CAPTURA! (dist < 1.5)")
+                                print("    CAPTURA (dist < 1.5)")
             else:
-                print("  ⚠️ ¡NO SE DETECTARON ENTIDADES!")
+                print("  No se detectaron entidades")
             
-            # Grid/Board
             board = obs.get('board', None)
             if board is not None:
-                print(f"\n🗺️ BOARD/GRID:")
+                print(f"\nBOARD/GRID:")
                 print(f"  Tipo: {type(board)}")
                 if isinstance(board, list):
-                    print(f"  Tamaño: {len(board)} elementos")
-                    # Mostrar algunos elementos
+                    print(f"  Tamano: {len(board)} elementos")
                     print(f"  Primeros 10: {board[:10]}")
             
-            # Otros campos relevantes
             other_keys = [k for k in obs.keys() if k not in [
                 'XPos', 'YPos', 'ZPos', 'Yaw', 'Pitch',
                 'XVel', 'YVel', 'ZVel', 'Life', 'Food',
                 'entities', 'board'
             ]]
             if other_keys:
-                print(f"\n📊 OTROS CAMPOS:")
+                print(f"\nOTROS CAMPOS:")
                 for key in other_keys:
                     print(f"  {key}: {obs.get(key)}")
         
         else:
-            print(f"\n⚠️ OBSERVACIÓN NO ES DICCIONARIO")
+            print(f"\nOBSERVACION NO ES DICCIONARIO")
             print(f"Contenido: {obs}")
         
         print("\n" + "="*80 + "\n")
     
     def run_debug_episode(self, max_steps=20):
         """Ejecuta un episodio corto mostrando todas las observaciones"""
-        print(f"\n[{self.role_name}] 🔍 Iniciando episodio de debugging ({max_steps} steps)...\n")
+        print(f"\n[{self.role_name}] Iniciando episodio de debugging ({max_steps} steps)...\n")
         
         try:
             # Reset
@@ -149,30 +139,30 @@ class DebugMalmoEnv:
                 action = np.random.randint(0, 4)
                 action_names = ["Norte", "Sur", "Este", "Oeste"]
                 
-                print(f"\n[{self.role_name}] 🎮 Ejecutando acción: {action_names[action]}")
+                print(f"\n[{self.role_name}] Ejecutando accion: {action_names[action]}")
                 
                 obs, reward, done, info = self.env.step(action)
                 self.step_count += 1
                 
                 # Mostrar recompensa de Malmo
-                print(f"💰 Reward de Malmo: {reward}")
-                print(f"🏁 Done: {done}")
-                print(f"ℹ️ Info: {info}")
+                print(f"Reward de Malmo: {reward}")
+                print(f"Done: {done}")
+                print(f"Info: {info}")
                 
                 # Mostrar observación completa
                 self.print_observation_details(obs)
                 
                 if done:
-                    print(f"\n[{self.role_name}] ⚠️ Episodio terminado en step {step+1}")
+                    print(f"\n[{self.role_name}] Episodio terminado en step {step+1}")
                     break
                 
                 # Pausa para leer
                 time.sleep(1)
             
-            print(f"\n[{self.role_name}] ✓ Debug completado")
+            print(f"\n[{self.role_name}] Debug completado")
         
         except Exception as e:
-            print(f"\n[{self.role_name}] ✗ ERROR: {e}")
+            print(f"\n[{self.role_name}] ERROR: {e}")
             import traceback
             traceback.print_exc()
         
@@ -209,14 +199,14 @@ def test_enemy_detection(role, xml, port, server, server2, start_barrier):
 # ==================== MAIN ====================
 if __name__ == '__main__':
     print("=" * 80)
-    print("  🔍 DEBUGGING DE OBSERVACIONES MALMO")
-    print("  Verificando qué ve cada agente")
+    print("  DEBUGGING DE OBSERVACIONES MALMO")
+    print("  Verificando que ve cada agente")
     print("=" * 80)
     
     # Cargar XML
     xml_path = Path('missions/chase_escape.xml')
     if not xml_path.exists():
-        print(f"\n❌ ERROR: No se encuentra {xml_path}")
+        print(f"\nERROR: No se encuentra {xml_path}")
         exit(1)
     
     xml = xml_path.read_text()
@@ -226,17 +216,17 @@ if __name__ == '__main__':
     number_of_agents = len(mission.findall('{http://ProjectMalmo.microsoft.com}AgentSection'))
     
     if number_of_agents != 2:
-        print(f"\n❌ ERROR: Se necesitan 2 agentes")
+        print(f"\nERROR: Se necesitan 2 agentes")
         exit(1)
     
-    print(f"\n✓ Misión cargada: {number_of_agents} agentes")
+    print(f"\nMisión cargada: {number_of_agents} agentes")
     
     # Configuración
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
     
-    print(f"\n⚙️ Configuración:")
+    print(f"\nConfiguración:")
     print(f"  Puerto Perseguidor: {PORT}")
     print(f"  Puerto Escapista: {PORT + 1}")
     
@@ -247,11 +237,11 @@ if __name__ == '__main__':
     print(f"  3. Terminal 2: py -3.7 -c \"import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft({PORT + 1})\"")
     print("  4. Espera 'SERVER STARTED' en ambas")
     print("=" * 80)
-    print("\n⚠️ Este script ejecutará 20 steps y mostrará TODO lo que observa cada agente")
+    print("\nEste script ejecutará 20 steps y mostrará TODO lo que observa cada agente")
     print("Presiona ENTER cuando estés listo...")
     input()
     
-    print("\n🚀 Iniciando debug en 3 segundos...")
+    print("\nIniciando debug en 3 segundos...")
     time.sleep(3)
     
     # Barrier
@@ -272,13 +262,13 @@ if __name__ == '__main__':
     [t.join() for t in threads]
     
     print("\n" + "=" * 80)
-    print("  ✓ DEBUG COMPLETADO")
+    print("  DEBUG COMPLETADO")
     print("=" * 80)
-    print("\n📋 ANÁLISIS:")
+    print("\nANALISIS:")
     print("  1. ¿Los agentes detectan al otro en 'entities'?")
     print("  2. ¿Las posiciones son correctas?")
     print("  3. ¿La distancia se calcula bien?")
     print("  4. ¿Hay algún campo faltante?")
-    print("\n💡 Si NO detecta entidades, el problema está en el XML de la misión")
-    print("💡 Si detecta pero posiciones son incorrectas, problema en extracción")
-    print("💡 Si todo es None/N/A, Malmo no está enviando observaciones correctamente")
+    print("\nSi NO detecta entidades, el problema está en el XML de la misión")
+    print("Si detecta pero posiciones son incorrectas, problema en extracción")
+    print("Si todo es None/N/A, Malmo no está enviando observaciones correctamente")

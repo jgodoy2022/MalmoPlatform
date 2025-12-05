@@ -1,10 +1,25 @@
 """
-Sistema de Entrenamiento Multi-Agente CORREGIDO
-PPO (Perseguidor) vs DQN (Escapista) en Malmo
+Sistema de entrenamiento multi-agente (corregido) para Malmo:
+- Perseguidor con PPO (Stable-Baselines3)
+- Escapista con DQN (Stable-Baselines3)
 
-FIX CRÍTICO: Las observaciones están en info, no en obs
-obs = imagen (numpy array)
-info = diccionario JSON con posiciones/entidades
+Idea clave: las observaciones utiles vienen en info, no en obs.
+obs = imagen cruda (numpy array)
+info = dict JSON con posiciones/entidades; se usa para construir el estado.
+
+Como usar (Windows):
+1) Abrir dos terminales y lanzar Minecraft:
+   py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)"
+   py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9001)"
+   Esperar "SERVER STARTED" en ambas.
+2) Desde la carpeta MalmoEnv:
+   py -3.7 train_chase_escape_opt.py
+   (continua desde los modelos guardados si existen en models/)
+
+Salida y artefactos:
+- Modelos en models/perseguidor_ppo_best.zip y escapista_dqn_best.zip
+- Metricas por episodio del perseguidor en stats/Perseguidor_PPO_episodes.csv
+- Logs de monitor en logs/ y tensorboard/ si se activan
 """
 import malmoenv
 import numpy as np
@@ -22,15 +37,15 @@ try:
     from stable_baselines3 import PPO, DQN
     from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
     from stable_baselines3.common.monitor import Monitor
-    print("✓ Stable-Baselines3 importado correctamente")
+    print("Stable-Baselines3 importado correctamente")
 except ImportError:
-    print("❌ ERROR: Instala stable-baselines3")
+    print("ERROR: Instala stable-baselines3")
     exit(1)
 
 
-# ==================== WRAPPER CORREGIDO ====================
+# Wrapper
 class MalmoGymWrapper(gym.Env):
-    """Wrapper CORREGIDO - Extrae datos de info en lugar de obs"""
+    """Wrapper - Extrae datos de info en lugar de obs"""
     
     def __init__(self, xml, port, server, server2, port2, role, exp_uid):
         super().__init__()
@@ -55,7 +70,7 @@ class MalmoGymWrapper(gym.Env):
         
         # Estado interno
         self.env = None
-        self.prev_info = None  # Cambiado: guardamos info, no obs
+        self.prev_info = None 
         self.episode_steps = 0
         self.max_steps = 700
         self.episode_reward = 0
@@ -66,6 +81,7 @@ class MalmoGymWrapper(gym.Env):
         self.consecutive_retreats = 0
         
         self._init_malmo()
+
     
     def _init_malmo(self):
         """Inicializa Malmo"""
@@ -76,15 +92,14 @@ class MalmoGymWrapper(gym.Env):
                 server2=self.server2, port2=self.port2,
                 role=self.role, exp_uid=self.exp_uid
             )
-            print(f"[{self.role_name}] ✓ Conectado")
+            print(f"[{self.role_name}] Conectado")
         except Exception as e:
-            print(f"[{self.role_name}] ✗ Error: {e}")
+            print(f"[{self.role_name}] Error: {e}")
             raise
     
+    
     def _parse_info(self, info):
-        """
-        Parsea info - puede venir como string JSON, dict, o None
-        """
+        """ Parsea info, puede venir como string JSON, dict, o None """
         if info is None:
             return {}
         
@@ -102,10 +117,9 @@ class MalmoGymWrapper(gym.Env):
         else:
             return {}
     
+
     def _extract_state(self, info_dict):
-        """
-        CORREGIDO: Usa caché cuando Malmo pierde al enemigo.
-        """
+        """ Usa caché cuando Malmo pierde al enemigo. """
         features = []
 
         if not isinstance(info_dict, dict):
@@ -116,7 +130,7 @@ class MalmoGymWrapper(gym.Env):
         my_z = info_dict.get('ZPos', 0.0)
         features.extend([my_x / 10.0, my_z / 10.0])
 
-        # 2. Velocidad (generalmente no disponible directamente, usar 0)
+        # 2. Velocidad
         my_vx = 0.0
         my_vz = 0.0
         features.extend([my_vx, my_vz])
@@ -147,12 +161,9 @@ class MalmoGymWrapper(gym.Env):
                     enemy_found = True
                     break
 
-        # ================================
-        # FIX: Si no se detecta enemigo
-        # ================================
         if not enemy_found:
 
-            # FIX 1: Primer tick del episodio (prev_info=None)
+            # Primer tick del episodio (prev_info=None)
             if self.prev_info is None:
                 if info_dict.get("Name") == "Perseguidor_PPO":
                     enemy_x, enemy_z = 4.5, 4.5
@@ -161,15 +172,13 @@ class MalmoGymWrapper(gym.Env):
 
                 enemy_data = {"x": enemy_x, "z": enemy_z}
 
-            # FIX 2: Paso normal → usar caché
+            # Paso normal usar caché
             elif "last_enemy" in self.prev_info:
                 enemy_data = self.prev_info["last_enemy"]
 
-            # FIX 3: No hay nada
+            # Nada
             else:
                 enemy_data = None
-
-        # =================================
 
         if enemy_data:
             enemy_x = enemy_data.get('x', my_x)
@@ -204,7 +213,7 @@ class MalmoGymWrapper(gym.Env):
         border_dist_z = np.clip((10.0 - abs(my_z)) / 10.0, 0, 1)
         features.extend([border_dist_x, border_dist_z])
 
-        # Asegurar tamaño exacto
+        # Asegurar tamaño
         features = features[:15]
         while len(features) < 15:
             features.append(0.0)
@@ -212,12 +221,8 @@ class MalmoGymWrapper(gym.Env):
         return np.array(features, dtype=np.float32)
 
 
-    
     def _calculate_reward(self, info, prev):
-        """
-        Recompensas balanceadas
-        PPO y DQN en escalas comparables
-        """
+        """ Recompensas PPO y DQN en escalas comparables """
         if info is None or prev is None:
             return 0.0, False
     
@@ -225,7 +230,7 @@ class MalmoGymWrapper(gym.Env):
         my_z = info.get("ZPos", 0.0)
         my_name = info.get("Name", "")
 
-        # Buscar enemigo actual
+        # Buscar enemigo
         enemy_dist = None
         for e in info.get("entities", []):
             if isinstance(e, dict):
@@ -247,7 +252,7 @@ class MalmoGymWrapper(gym.Env):
                     prev_dist = np.sqrt((px-ex)**2 + (pz-ez)**2)
                     break
 
-        # No hay datos suficientes
+        # Datos insuficientes
         if enemy_dist is None or prev_dist is None:
             return 0.0, False
 
@@ -255,9 +260,7 @@ class MalmoGymWrapper(gym.Env):
         delta = prev_dist - enemy_dist
         delta = float(np.clip(delta, -1, 1))
 
-        # -------------------------------
-        # REWARD DEL PERSEGUIDOR (PPO)
-        # -------------------------------
+        # Rward perseguidor ppo
         if self.role == 0:
             reward = delta * 1.0   # acercarse da +, alejarse da -
         
@@ -267,9 +270,7 @@ class MalmoGymWrapper(gym.Env):
         
             reward -= 0.01         # pequeña penalización por paso
 
-        # -------------------------------
-        # REWARD DEL ESCAPISTA (DQN)
-        # -------------------------------
+        # Reward escapista dqn
         else:
             reward = -delta * 1.0  # alejarse da +, acercarse da -
 
@@ -282,7 +283,7 @@ class MalmoGymWrapper(gym.Env):
         return float(reward), False
     
     def reset(self, seed=None, options=None):
-        """Reset mejorado"""
+        """Reset """
         super().reset(seed=seed)
         
         self.min_distance_achieved = float('inf')
@@ -292,14 +293,13 @@ class MalmoGymWrapper(gym.Env):
         try:
             obs = self.env.reset()
             
-            # Intentar obtener info del reset
-            # Si reset no devuelve info, hacer un step sin acción
+            # Intentar obtener info del reset si no devuelve info, hacer un step sin acción
             if isinstance(obs, tuple) and len(obs) > 3:
                 # Reset devolvió (obs, reward, done, info)
                 _, _, _, first_info = obs
                 obs = obs[0]
             else:
-                # Reset solo devolvió obs, hacer dummy step
+                # Reset solo devolvió obs
                 dummy_obs, dummy_reward, dummy_done, first_info = self.env.step(0)
             
             # Parsear info
@@ -321,12 +321,6 @@ class MalmoGymWrapper(gym.Env):
             self.episode_reward = 0
             
             state = self._extract_state(info_dict)
-            
-            # LOGGING INICIAL
-            print(f"\n[{self.role_name}] RESET")
-            print(f"  Raw info: {first_info}")
-            print(f"  Parsed info: {info_dict}")
-            print(f"  Initial state: {state}")
 
             return state, {}
         
@@ -344,16 +338,14 @@ class MalmoGymWrapper(gym.Env):
             return self._extract_state(default_info), {}
     
     def step(self, action):
-        """Step CORREGIDO con caché de última observación válida"""
+        """Step con caché de última observación válida """
         try:
             obs, malmo_reward, done, info = self.env.step(action)
         
             # Parsear info
             info_dict = self._parse_info(info)
 
-            # ================================
-            # FIX: Validar si info es VÁLIDA
-            # ================================
+            # Verificar si info es valida
             valid_info = (
                 isinstance(info_dict, dict)
                 and 'XPos' in info_dict
@@ -365,8 +357,6 @@ class MalmoGymWrapper(gym.Env):
             if not valid_info:
                 # Mantener la última observación válida
                 info_dict = self.prev_info
-            # Si ES válida, actualizamos prev_info abajo
-            # ================================
 
             # Calcular recompensa personalizada
             custom_reward, captured = self._calculate_reward(info_dict, self.prev_info)
@@ -377,7 +367,7 @@ class MalmoGymWrapper(gym.Env):
             # Extraer estado de info
             state = self._extract_state(info_dict)
 
-            # ==== LOGS INTELIGENTES (NO LOS TOCO) ====
+            # Logs 
             if 'entities' in info_dict:
                 enemy = None
                 for e in info_dict['entities']:
@@ -401,12 +391,8 @@ class MalmoGymWrapper(gym.Env):
             if self.episode_steps % 50 == 0:
                 print(f"[{self.role_name}] step={self.episode_steps} reward={total_reward:.3f} dist={dist}")
 
-            # ================================
-            # FIX: Solo actualizar prev_info si fue válida
-            # ================================
             if valid_info:
                 self.prev_info = info_dict
-            # ================================
 
             # Actualizar
             self.episode_steps += 1
@@ -453,7 +439,7 @@ class MalmoGymWrapper(gym.Env):
                 pass
 
 
-# ==================== CALLBACK ====================
+# Callback
 class ImprovedCallback(BaseCallback):
     """Callback con logging + guardado de resultados por episodio"""
 
@@ -462,20 +448,16 @@ class ImprovedCallback(BaseCallback):
         self.role = role
         self.role_name = role_name
         self.check_freq = check_freq
-
-        # --- Mantengo toda tu funcionalidad anterior ---
         self.episode_rewards = deque(maxlen=100)
         self.episode_lengths = deque(maxlen=100)
         self.best_mean_reward = -np.inf
         self.no_improvement_count = 0
         self.max_no_improvement = 200
-
-        # --- NUEVO ---
         self.episode_counter = 0
         self.csv_path = f"stats/{self.role_name}_episodes.csv"
 
         # Crear CSV si no existe
-        if self.role == 0:  # SOLO EL PERSEGUIDOR GUARDA RESULTADOS
+        if self.role == 0: 
             os.makedirs("stats", exist_ok=True)
             if not os.path.exists(self.csv_path):
                 with open(self.csv_path, "w") as f:
@@ -483,17 +465,13 @@ class ImprovedCallback(BaseCallback):
 
     def _on_step(self) -> bool:
 
-        # -------------------------
         # Guardar reward/length
-        # -------------------------
         if len(self.model.ep_info_buffer) > 0:
             for ep_info in self.model.ep_info_buffer:
                 self.episode_rewards.append(ep_info['r'])
                 self.episode_lengths.append(ep_info['l'])
 
-        # -------------------------
         # Detectar fin de episodio
-        # -------------------------
         dones = self.locals.get("dones", [])
         infos = self.locals.get("infos", [])
 
@@ -513,29 +491,25 @@ class ImprovedCallback(BaseCallback):
                 total_reward = 0
                 length = 0
 
-            # -------------------------
-            # CAPTURA FIABLE (solo perseguidor)
-            # -------------------------
+            # Captura
             if self.role == 0:
                 if i < len(infos) and isinstance(infos[i], dict):
                     captured = 1 if infos[i].get("captured", False) else 0
                 else:
                     captured = 0  # fallback seguro
 
-                # Guardar en el CSV del perseguidor
+                # Guardar en el CSV
                 with open(self.csv_path, "a") as f:
                     f.write(f"{self.episode_counter},{captured},{total_reward},{length}\n")
 
-        # -------------------------
         # Logging periódico
-        # -------------------------
         if self.n_calls % self.check_freq == 0 and len(self.episode_rewards) > 0:
             mean_reward = np.mean(self.episode_rewards)
             mean_length = np.mean(self.episode_lengths)
             std_reward = np.std(self.episode_rewards)
 
             print(f"\n[{self.role_name}] Step {self.n_calls}")
-            print(f"  Reward: {mean_reward:.2f} ± {std_reward:.2f}")
+            print(f"  Reward: {mean_reward:.2f} +/- {std_reward:.2f}")
             print(f"  Length: {mean_length:.1f}")
 
             # Guardar mejor modelo
@@ -546,24 +520,23 @@ class ImprovedCallback(BaseCallback):
 
                 model_path = f"models/{self.role_name.lower()}_best.zip"
                 self.model.save(model_path)
-                print(f"  ✓ MEJOR (+{improvement:.2f})")
+                print(f"  Mejor resultado (+{improvement:.2f})")
             else:
                 self.no_improvement_count += 1
                 print(f"  Sin mejora ({self.no_improvement_count}/{self.max_no_improvement})")
 
             if self.no_improvement_count >= self.max_no_improvement:
-                print(f"\n[{self.role_name}] ⚠️ EARLY STOPPING")
+                print(f"\n[{self.role_name}] EARLY STOPPING")
                 return False
 
         return True
 
 
-# ==================== ENTRENAMIENTO ====================
+# Entrenamiento
 def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_barrier):
     """Entrenamiento"""
     role_name = "Perseguidor_PPO" if role == 0 else "Escapista_DQN"
-    
-    print(f"\n[{role_name}] Inicializando...")
+    print(f"\n[{role_name}] Inicializando")
     
     start_barrier.wait()
     time.sleep(role * 2)
@@ -619,33 +592,28 @@ def train_agent_sb3(role, xml, port, server, server2, total_timesteps, start_bar
             role=role, role_name=role_name, check_freq=2000
         )
         
-        print(f"\n[{role_name}] 🚀 Entrenamiento iniciado ({total_timesteps:,} steps)")
+        print(f"\n[{role_name}] Entrenamiento iniciado ({total_timesteps:,} steps)")
         model.learn(
             total_timesteps=total_timesteps,
             callback=[checkpoint_callback, custom_callback],
-            progress_bar=False  # Desactivado para multi-agente
+            progress_bar=False  # Desactivado para multiagente
         )
         
         final_path = f"models/{role_name}_FINAL.zip"
         model.save(final_path)
-        print(f"\n[{role_name}] ✓ Modelo final: {final_path}")
+        print(f"\n[{role_name}] Modelo final: {final_path}")
         
         env.close()
-        print(f"[{role_name}] ✓ Completado!")
+        print(f"[{role_name}] Completado!")
     
     except Exception as e:
-        print(f"[{role_name}] ✗ ERROR: {e}")
+        print(f"[{role_name}] ERROR: {e}")
         import traceback
         traceback.print_exc()
 
 
-# ==================== MAIN ====================
+# Main
 if __name__ == '__main__':
-    print("=" * 70)
-    print("  ENTRENAMIENTO MULTI-AGENTE CORREGIDO")
-    print("  FIX: Observaciones desde info, no obs")
-    print("=" * 70)
-    
     Path('stats').mkdir(exist_ok=True)
     Path('models').mkdir(exist_ok=True)
     Path('logs').mkdir(exist_ok=True)
@@ -653,7 +621,7 @@ if __name__ == '__main__':
     
     xml_path = Path('missions/chase_escape.xml')
     if not xml_path.exists():
-        print(f"\n❌ ERROR: No se encuentra {xml_path}")
+        print(f"\nERROR: No se encuentra {xml_path}")
         exit(1)
     
     xml = xml_path.read_text()
@@ -661,10 +629,10 @@ if __name__ == '__main__':
     number_of_agents = len(mission.findall('{http://ProjectMalmo.microsoft.com}AgentSection'))
     
     if number_of_agents != 2:
-        print(f"\n❌ ERROR: Se necesitan 2 agentes")
+        print(f"\nERROR: Se necesitan 2 agentes")
         exit(1)
     
-    print(f"\n✓ Misión cargada: {number_of_agents} agentes")
+    print(f"\nMisión cargada: {number_of_agents} agentes")
     
     PORT = 9000
     SERVER = '127.0.0.1'
@@ -674,18 +642,13 @@ if __name__ == '__main__':
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
     print(f"  Total timesteps: {TOTAL_TIMESTEPS:,}")
-    print(f"  🔧 FIX APLICADO: Extrayendo de info en lugar de obs")
     
-    print("\n" + "=" * 70)
     print("INSTRUCCIONES:")
     print("  1. DOS terminales:")
     print(f"  2. py -3.7 -c \"import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft({PORT})\"")
     print(f"  3. py -3.7 -c \"import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft({PORT + 1})\"")
-    print("=" * 70)
     print("\nPresiona ENTER cuando estén listas...")
     input()
-    
-    print("\n🚀 Iniciando en 3 segundos...")
     time.sleep(3)
     
     start_barrier = Barrier(number_of_agents)
@@ -702,8 +665,4 @@ if __name__ == '__main__':
     [t.start() for t in threads]
     [t.join() for t in threads]
     
-    print("\n" + "=" * 70)
-    print("  ✓ ENTRENAMIENTO COMPLETADO")
-    print("=" * 70)
-    print("\nTensorBoard: tensorboard --logdir ./tensorboard")
-    print("\n✅ ¡Ahora SÍ debería funcionar!")
+    print("  ENTRENAMIENTO COMPLETADO")

@@ -1,6 +1,15 @@
 """
-train_static_fixed.py
-Agente PPO buscando target ESTÁTICO en (0,0) con debugging por step.
+Entrenamiento single-agent PPO para perseguir un objetivo estatico (ArmorStand) en Malmo.
+
+Uso rapido (Windows):
+1) Levanta Minecraft en el puerto deseado: py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)"
+2) Desde MalmoEnv: py -3.7 train_static_target_ppo.py
+   (continua desde el modelo guardado si existe en models/)
+
+Detalles:
+- Observacion vectorial de 10 dims, accion discreta de 4 movimientos
+- Usa Stable-Baselines3.PPO con callbacks de checkpoint
+- Maximo de pasos por episodio fijado en 450; recompensas dependen de distancia al target
 """
 
 import malmoenv
@@ -49,7 +58,7 @@ class TargetEnv(gym.Env):
         self.env = malmoenv.make()
         # NO existe set_available_actions() en malmoenv.Env -> no llamarlo
         self.env.init(self.xml, self.port, server=self.server, role=0, exp_uid=self.exp_uid)
-        print(f"[Env] ✓ Conectado a {self.server}:{self.port}")
+        print(f"[Env] Conectado a {self.server}:{self.port}")
 
     def _parse_info(self, info):
         """Parsea 'info' que puede venir como dict, json string, o cosas raras."""
@@ -293,30 +302,6 @@ class TargetEnv(gym.Env):
             terminated = bool(captured)
             truncated = self.episode_steps >= self.max_steps
 
-            # DEBUG: imprimir posición agente, target, distancia, acción, reward
-            ax = info.get("XPos", None)
-            az = info.get("ZPos", None)
-            if self.fixed_target is not None:
-                tx, tz = self.fixed_target
-            else:
-                tx, tz = self._get_target_position_from_info(info)
-
-            if ax is None or az is None:
-                dist_txt = "??"
-                target_txt = "(??,??)" if (tx is None or tz is None) else f"({tx:.2f},{tz:.2f})"
-            else:
-                if tx is None or tz is None:
-                    dist_txt = "??"
-                    target_txt = "(??,??)"
-                else:
-                    dist = np.sqrt((ax - tx)**2 + (az - tz)**2)
-                    dist_txt = f"{dist:.3f}"
-                    target_txt = f"({tx:.2f},{tz:.2f})"
-
-            print(f"[DEBUG] step={self.episode_steps:03d} | act={action} | "
-                  f"Agente=({ax if ax is not None else '??'},{az if az is not None else '??'}) | "
-                  f"Target={target_txt} | dist={dist_txt} | reward={custom_reward:.4f} | captured={captured}")
-
             # preparar info de salida para SB3/Monitor
             out_info = {"captured": bool(captured)}
             if terminated or truncated:
@@ -357,7 +342,7 @@ class RewardMonitorCallback(BaseCallback):
                     self.best_mean = mean_r
                     Path("models/Buscador_PPO").mkdir(exist_ok=True)
                     self.model.save("models/Buscador_PPO/best_model.zip")
-                    print("[Callback] ✓ Guardado nuevo mejor modelo")
+                    print("[Callback] Guardado nuevo mejor modelo")
         return True
 
 
@@ -374,7 +359,7 @@ if __name__ == "__main__":
     script_dir = Path(__file__).resolve().parent
     xml_path = script_dir / "missions" / "chase_static_target.xml"
     if not xml_path.exists():
-        print(f"❌ ERROR: No se encuentra {xml_path}")
+        print(f"ERROR: No se encuentra {xml_path}")
         raise SystemExit(1)
 
     xml = xml_path.read_text()
@@ -393,7 +378,7 @@ if __name__ == "__main__":
 
     model_path = "models/Buscador_PPO/best_model.zip"
     if os.path.exists(model_path):
-        print(f"[INFO] Cargando modelo previo...")
+        print("[INFO] Cargando modelo previo...")
         model = PPO.load(model_path, env=env)
     else:
         print("[INFO] Creando modelo PPO...")
@@ -417,4 +402,4 @@ if __name__ == "__main__":
     model.learn(total_timesteps=TIMESTEPS, callback=[checkpoint, best_reward_callback])
 
     model.save("models/Buscador_PPO/final_model.zip")
-    print("\n✓ ENTRENAMIENTO COMPLETADO")
+    print("\nEntrenamiento completado")

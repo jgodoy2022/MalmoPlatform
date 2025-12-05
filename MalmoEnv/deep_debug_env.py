@@ -1,5 +1,14 @@
-#!/usr/bin/env python3
 """
+DEBUG para la mision chase_static_target (ArmorStand estatico).
+- Inyecta el target en coordenadas aleatorias
+- Valida la conexion al servidor Malmo y muestra lo que llega en obs/info
+- Corre pasos aleatorios para inspeccionar recompensas y flags de finalizacion
+
+Uso rapido:
+1) Lanza Minecraft: py -3.7 -c "import malmoenv.bootstrap; malmoenv.bootstrap.launch_minecraft(9000)" y espera SERVER STARTED
+2) Ejecuta: py -3.7 deep_debug_env.py
+3) Sigue la consola; imprime obs/info detallados y detiene al terminar la mision o completar los steps configurados (por defecto 30)
+
 DEBUG para chase_static_target (ArmorStand estático).
 Imprime TODO lo que recibe el agente y valida que el target esté presente.
 """
@@ -14,6 +23,7 @@ import sys
 
 # --------- UTIL helpers ----------
 def wait_for_server(host, port, timeout=60):
+    """Espera a que el socket host:port responda (TCP) hasta timeout; devuelve True si conecta."""
     print(f"Esperando servidor en {host}:{port} ...")
     t0 = time.time()
     while time.time() - t0 < timeout:
@@ -48,6 +58,7 @@ def place_random_target_in_xml(xml_text):
 
 # --------- DEBUG main ----------
 def debug_mission(xml_text, port=9000, server="127.0.0.1", exp_uid="debug_static_target", steps=30):
+    """Inicializa Malmo, hace reset y ejecuta 'steps' acciones aleatorias para inspeccionar obs/info y recompensas."""
     print("Inicializando env de debug...")
     env = None
     try:
@@ -92,7 +103,7 @@ def debug_mission(xml_text, port=9000, server="127.0.0.1", exp_uid="debug_static
                 print("Error cerrando entorno:", e)
 
 def print_obs_info(obs, info, prefix=""):
-    """Imprime detalles completos de obs y info."""
+    """Imprime tipo y claves de obs/info, posiciones y primeras entidades detectadas para depurar la mision."""
     print("\n" + "-"*80)
     print(f"{prefix} OBS type: {type(obs)}")
     if isinstance(obs, dict):

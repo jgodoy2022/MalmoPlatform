@@ -38,7 +38,7 @@ def plot_training_comparison():
     dqn_data = load_monitor_data('logs/Escapista_DQN.monitor.csv')
     
     if ppo_data is None and dqn_data is None:
-        print("❌ No se encontraron datos de entrenamiento")
+        print("No se encontraron datos de entrenamiento")
         print("Asegúrate de haber ejecutado train_sb3_multiagent.py primero")
         return
     
@@ -126,24 +126,24 @@ def plot_training_comparison():
     
     if ppo_data is not None and 'r' in ppo_data.columns:
         stats_text += "PPO (Perseguidor):\n"
-        stats_text += f"  • Episodios: {len(ppo_data)}\n"
-        stats_text += f"  • Recompensa media: {ppo_data['r'].mean():.2f}\n"
-        stats_text += f"  • Recompensa máxima: {ppo_data['r'].max():.2f}\n"
-        stats_text += f"  • Recompensa mínima: {ppo_data['r'].min():.2f}\n"
-        stats_text += f"  • Desv. estándar: {ppo_data['r'].std():.2f}\n"
+        stats_text += f"  - Episodios: {len(ppo_data)}\n"
+        stats_text += f"  - Recompensa media: {ppo_data['r'].mean():.2f}\n"
+        stats_text += f"  - Recompensa máxima: {ppo_data['r'].max():.2f}\n"
+        stats_text += f"  - Recompensa mínima: {ppo_data['r'].min():.2f}\n"
+        stats_text += f"  - Desv. estándar: {ppo_data['r'].std():.2f}\n"
         if 'l' in ppo_data.columns:
-            stats_text += f"  • Pasos promedio: {ppo_data['l'].mean():.1f}\n"
+            stats_text += f"  - Pasos promedio: {ppo_data['l'].mean():.1f}\n"
         stats_text += "\n"
     
     if dqn_data is not None and 'r' in dqn_data.columns:
         stats_text += "DQN (Escapista):\n"
-        stats_text += f"  • Episodios: {len(dqn_data)}\n"
-        stats_text += f"  • Recompensa media: {dqn_data['r'].mean():.2f}\n"
-        stats_text += f"  • Recompensa máxima: {dqn_data['r'].max():.2f}\n"
-        stats_text += f"  • Recompensa mínima: {dqn_data['r'].min():.2f}\n"
-        stats_text += f"  • Desv. estándar: {dqn_data['r'].std():.2f}\n"
+        stats_text += f"  - Episodios: {len(dqn_data)}\n"
+        stats_text += f"  - Recompensa media: {dqn_data['r'].mean():.2f}\n"
+        stats_text += f"  - Recompensa máxima: {dqn_data['r'].max():.2f}\n"
+        stats_text += f"  - Recompensa mínima: {dqn_data['r'].min():.2f}\n"
+        stats_text += f"  - Desv. estándar: {dqn_data['r'].std():.2f}\n"
         if 'l' in dqn_data.columns:
-            stats_text += f"  • Pasos promedio: {dqn_data['l'].mean():.1f}\n"
+            stats_text += f"  - Pasos promedio: {dqn_data['l'].mean():.1f}\n"
     
     ax4.text(0.1, 0.95, stats_text, transform=ax4.transAxes, 
             fontsize=11, verticalalignment='top', fontfamily='monospace',
@@ -155,7 +155,7 @@ def plot_training_comparison():
     # Guardar figura
     output_file = 'training_comparison.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
-    print(f"\n✓ Gráfico guardado: {output_file}")
+    print(f"\nGráfico guardado: {output_file}")
     
     # Mostrar
     plt.show()
@@ -167,7 +167,7 @@ def plot_evaluation_results():
     eval_files = list(Path('.').glob('evaluation_results_*.json'))
     
     if not eval_files:
-        print("\n⚠ No se encontraron archivos de evaluación")
+        print("\nNo se encontraron archivos de evaluación")
         print("Ejecuta evaluate_models.py primero")
         return
     
@@ -177,7 +177,7 @@ def plot_evaluation_results():
     with open(latest_file, 'r') as f:
         results = json.load(f)
     
-    print(f"\n📊 Visualizando: {latest_file}")
+    print(f"\nVisualizando: {latest_file}")
     
     # Crear figura
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
@@ -237,7 +237,7 @@ def plot_evaluation_results():
     # Guardar
     output_file = 'evaluation_results.png'
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
-    print(f"✓ Gráfico guardado: {output_file}")
+    print(f"Gráfico guardado: {output_file}")
     
     plt.show()
 
@@ -251,7 +251,7 @@ def main():
     eval_exists = len(list(Path('.').glob('evaluation_results_*.json'))) > 0
     
     if not logs_exist and not eval_exists:
-        print("\n❌ No se encontraron datos para visualizar")
+        print("\nNo se encontraron datos para visualizar")
         print("\nAsegúrate de haber ejecutado:")
         print("  1. train_sb3_multiagent.py (para generar logs/)")
         print("  2. evaluate_models.py (para generar evaluation_results_*.json)")
@@ -261,7 +261,7 @@ def main():
     
     # Gráficos de entrenamiento
     if logs_exist:
-        print("📈 Visualizando datos de entrenamiento...")
+        print("Visualizando datos de entrenamiento...")
         try:
             plot_training_comparison()
         except Exception as e:
@@ -269,14 +269,14 @@ def main():
     
     # Gráficos de evaluación
     if eval_exists:
-        print("\n📊 Visualizando resultados de evaluación...")
+        print("\nVisualizando resultados de evaluación...")
         try:
             plot_evaluation_results()
         except Exception as e:
             print(f"Error generando gráficos de evaluación: {e}")
     
     print("\n" + "=" * 70)
-    print("✅ Visualización completada!")
+    print("Visualización completada")
     print("=" * 70)
 
 if __name__ == '__main__':
@@ -286,7 +286,7 @@ if __name__ == '__main__':
         import pandas
         import scipy
     except ImportError as e:
-        print("❌ Faltan dependencias para visualización:")
+        print("Faltan dependencias para visualización:")
         print(f"   {e}")
         print("\nInstala con:")
         print("   pip install matplotlib pandas scipy")

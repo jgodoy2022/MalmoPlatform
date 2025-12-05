@@ -1,7 +1,13 @@
 """
-Sistema de Entrenamiento Multi-Agente: Perseguidor vs Escapista
-PPO (Perseguidor) vs DQN (Escapista) en Malmo
-Basado en la estructura de runmultiagent.py
+Entrenamiento multi-agente basico para Malmo:
+- Perseguidor (PPO sencillo) vs Escapista (DQN casero con NumPy)
+- Version de referencia/experimento: sin Stable-Baselines3, sin logging avanzado
+
+Cuándo usarlo:
+- Para entender la logica minima del bucle de entrenamiento y la comunicacion con Malmo
+- Para pruebas rapidas sin dependencias adicionales
+
+Salida: genera modelos y logs simples en carpetas locales, pero no tiene callbacks de early stop ni CSV de metricas.
 """
 import malmoenv
 import numpy as np
@@ -318,9 +324,9 @@ def train_agent(role, xml, port, server, server2, episodes, agents_dict, stats_l
                  server2=server2, port2=(port + role),  # ¡CLAVE! port2 = port + role
                  role=role,
                  exp_uid='ppo_vs_dqn_training')
-        print(f"[{role_name}] ✅ Conexión establecida en puerto {port + role}")
+        print(f"[{role_name}] Conexión establecida en puerto {port + role}")
     except Exception as e:
-        print(f"[{role_name}] ❌ ERROR al conectar: {e}")
+        print(f"[{role_name}] ERROR al conectar: {e}")
         return
     
     agent = agents_dict[role]
@@ -506,7 +512,7 @@ if __name__ == '__main__':
     print("\nPresiona ENTER cuando ambas instancias de Minecraft estén listas...")
     input()
     
-    print("\n🚀 Iniciando entrenamiento...\n")
+    print("\nIniciando entrenamiento...\n")
     time.sleep(2)
     
     # Crear threads - MISMA LÓGICA que runmultiagent.py
@@ -552,4 +558,4 @@ if __name__ == '__main__':
     
     print(f"\nModelos guardados en: ./models/")
     print(f"Estadísticas guardadas en: ./stats_*.json")
-    print("\n✅ Entrenamiento finalizado exitosamente!")
+    print("\nEntrenamiento finalizado exitosamente!")
