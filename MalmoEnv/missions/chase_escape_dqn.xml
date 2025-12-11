@@ -1,0 +1,136 @@
+<Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SchemaVersion="">
+  <About>
+    <Summary>Perseguidor vs Escapista</Summary>
+  </About>
+  <ModSettings>
+    <MsPerTick>50</MsPerTick>
+  </ModSettings>
+  
+  <ServerSection>
+    <ServerInitialConditions>
+      <Time>
+        <StartTime>6000</StartTime>
+        <AllowPassageOfTime>false</AllowPassageOfTime>
+      </Time>
+      <Weather>clear</Weather>
+      <AllowSpawning>false</AllowSpawning>
+    </ServerInitialConditions>
+    
+    <ServerHandlers>
+      <FlatWorldGenerator generatorString="3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;" forceReset="true"/>
+      
+      <DrawingDecorator>
+        <!-- Limpiar área -->
+        <DrawCuboid type="air" x1="-20" x2="20" y1="4" y2="40" z1="-20" z2="20"/>
+        
+        <!-- Arena 11x11 con paredes -->
+        <DrawCuboid type="stone" x1="-6" x2="6" y1="4" y2="6" z1="-6" z2="-6"/>
+        <DrawCuboid type="stone" x1="-6" x2="6" y1="4" y2="6" z1="6" z2="6"/>
+        <DrawCuboid type="stone" x1="-6" x2="-6" y1="4" y2="6" z1="-6" z2="6"/>
+        <DrawCuboid type="stone" x1="6" x2="6" y1="4" y2="6" z1="-6" z2="6"/>
+        
+        <!-- Marcador central opcional -->
+        <DrawBlock type="gold_block" x="0" y="4" z="0"/>
+      </DrawingDecorator>
+      
+      <ServerQuitFromTimeUp description="time_up" timeLimitMs="120000"/>
+      <ServerQuitWhenAnyAgentFinishes/>
+    </ServerHandlers>
+  </ServerSection>
+  
+  <!-- AGENTE 0: PERSEGUIDOR -->
+  <AgentSection mode="Survival">
+    <Name>Perseguidor</Name>
+    <AgentStart>
+      <Placement pitch="0" x="-4.5" y="4" yaw="45" z="-4.5"/>
+      <Inventory>
+        <InventoryBlock quantity="1" slot="39" type="diamond_helmet"/>
+      </Inventory>
+    </AgentStart>
+    
+    <AgentHandlers>
+
+      <!-- SIN TURNOS -->
+      <ContinuousMovementCommands>
+        <ModifierList type="deny-list">
+          <command>attack</command>
+          <command>jump</command>
+        </ModifierList>
+      </ContinuousMovementCommands>
+
+      <ObservationFromNearbyEntities>
+        <Range name="entities" xrange="15" yrange="3" zrange="15"/>
+      </ObservationFromNearbyEntities>
+      
+      <ObservationFromGrid>
+        <Grid absoluteCoords="true" name="board">
+          <min x="-6" y="4" z="-6"/>
+          <max x="6" y="4" z="6"/>
+        </Grid>
+      </ObservationFromGrid>
+      
+      <ObservationFromFullStats/>
+      
+      <!-- Recompensas perseguidor -->
+      <RewardForSendingCommand reward="-0.01"/>
+      <RewardForTouchingBlockType>
+        <Block behaviour="oncePerTimeSpan" reward="-2.0" type="stone"/>
+      </RewardForTouchingBlockType>
+      
+      <AgentQuitFromReachingCommandQuota description="quota_reached" total="1000"/>
+      
+      <VideoProducer want_depth="false">
+        <Width>800</Width>
+        <Height>600</Height>
+      </VideoProducer>
+    </AgentHandlers>
+  </AgentSection>
+  
+  <!-- AGENTE 1: ESCAPISTA -->
+  <AgentSection mode="Survival">
+    <Name>Escapista</Name>
+    <AgentStart>
+      <Placement pitch="0" x="4.5" y="4" yaw="225" z="4.5"/>
+      <Inventory>
+        <InventoryBlock quantity="1" slot="39" type="leather_helmet"/>
+      </Inventory>
+    </AgentStart>
+    
+    <AgentHandlers>
+
+      <!-- SIN TURNOS -->
+      <ContinuousMovementCommands>
+        <ModifierList type="deny-list">
+          <command>attack</command>
+          <command>jump</command>
+        </ModifierList>
+      </ContinuousMovementCommands>
+
+      <ObservationFromNearbyEntities>
+        <Range name="entities" xrange="15" yrange="3" zrange="15"/>
+      </ObservationFromNearbyEntities>
+      
+      <ObservationFromGrid>
+        <Grid absoluteCoords="true" name="board">
+          <min x="-6" y="4" z="-6"/>
+          <max x="6" y="4" z="6"/>
+        </Grid>
+      </ObservationFromGrid>
+      
+      <ObservationFromFullStats/>
+      
+      <!-- Recompensas escapista -->
+      <RewardForSendingCommand reward="0.02"/>
+      <RewardForTouchingBlockType>
+        <Block behaviour="oncePerTimeSpan" reward="-2.0" type="stone"/>
+      </RewardForTouchingBlockType>
+      
+      <AgentQuitFromReachingCommandQuota description="quota_reached" total="1000"/>
+      
+      <VideoProducer want_depth="false">
+        <Width>800</Width>
+        <Height>600</Height>
+      </VideoProducer>
+    </AgentHandlers>
+  </AgentSection>
+</Mission>
