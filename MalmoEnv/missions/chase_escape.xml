@@ -29,12 +29,11 @@
         <DrawCuboid type="stone" x1="-6" x2="-6" y1="4" y2="6" z1="-6" z2="6"/>
         <DrawCuboid type="stone" x1="6" x2="6" y1="4" y2="6" z1="-6" z2="6"/>
 
-        <!-- Obstáculos para estrategia
+        <!-- Obstáculos para estrategia -->
         <DrawCuboid type="stone" x1="-2" x2="-1" y1="4" y2="5" z1="-2" z2="-1"/>
         <DrawCuboid type="stone" x1="1" x2="2" y1="4" y2="5" z1="1" z2="2"/>
         <DrawCuboid type="stone" x1="-2" x2="-1" y1="4" y2="5" z1="1" z2="2"/>
         <DrawCuboid type="stone" x1="1" x2="2" y1="4" y2="5" z1="-2" z2="-1"/>
-        -->
         
         <!-- Marcador central opcional -->
         <DrawBlock type="gold_block" x="0" y="4" z="0"/>

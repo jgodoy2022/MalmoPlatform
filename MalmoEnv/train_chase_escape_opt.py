@@ -452,7 +452,7 @@ class ImprovedCallback(BaseCallback):
         self.episode_lengths = deque(maxlen=100)
         self.best_mean_reward = -np.inf
         self.no_improvement_count = 0
-        self.max_no_improvement = 200
+        self.max_no_improvement = 2000
         self.episode_counter = 0
         self.csv_path = f"stats/{self.role_name}_episodes.csv"
 
@@ -637,7 +637,7 @@ if __name__ == '__main__':
     PORT = 9000
     SERVER = '127.0.0.1'
     SERVER2 = SERVER
-    TOTAL_TIMESTEPS = 20000  
+    TOTAL_TIMESTEPS = 100000  
     
     print(f"\nConfiguración:")
     print(f"  Puerto base: {PORT}")
